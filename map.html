@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cemetery Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: Arial, sans-serif;
+        }
+
+        #map {
+            height: calc(100vh - 140px); /* Full height minus search container height */
+            width: 100%;
+        }
+
+        #search-container {
+            padding: 10px;
+            text-align: center;
+            background-color: #f8f8f8;
+            border-bottom: 1px solid #ddd;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        #searchInput {
+            width: 70%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            max-width: 400px;
+        }
+
+        #searchButton {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
+
+        #searchButton:hover {
+            background-color: #0056b3;
+        }
+
+        /* Blinking effect for the user marker */
+        .blinking-marker {
+            animation: blinking 1.5s infinite;
+        }
+
+        @keyframes blinking {
+            0% { opacity: 1; }
+            50% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        /* Bubble button for directions */
+        #directionBubble {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background-color: #007bff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+
+        #directionBubble:hover {
+            background-color: #0056b3;
+        }
+
+        /* Expandable popup for directions */
+        #directionPopup {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            width: 300px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            display: none;
+            transition: all 0.3s ease;
+            z-index: 999;
+        }
+
+        #directionPopup .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #directionPopup .header button {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        /* Hide routing container */
+        .leaflet-routing-container {
+            display: none !important;
+        }
+
+        /* Mobile-specific styles */
+        @media (max-width: 600px) {
+            #searchInput {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+
+            #searchButton {
+                width: 100%;
+                margin-left: 0;
+            }
+
+            #directionPopup {
+                width: 90%;
+                left: 5%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="search-container">
+    <input type="text" id="searchInput" placeholder="Enter gravesite name">
+    <button id="searchButton">Search</button>
+</div>
+
+<div id="map"></div>
+
+<!-- Bubble button for directions -->
+<div id="directionBubble">📍</div>
+
+<!-- Expandable popup for directions -->
+<div id="directionPopup">
+    <div class="header">
+        <span id="stepInfo">Current Step</span>
+        <button id="closePopup">×</button>
+    </div>
+    <div id="nextDirection">Next direction goes here</div>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+<script>
+    // Custom gravestone icon
+    var gravestoneIcon = L.icon({
+        iconUrl: 'gravestone.png', // Replace with the path to your gravestone icon
+        iconSize: [32, 32], // Size of the icon
+        iconAnchor: [16, 32], // Point of the icon which will correspond to marker's location
+        popupAnchor: [0, -32] // Point from which the popup should open relative to the iconAnchor
+    });
+
+    // Blinking user icon
+    var blinkingIcon = L.divIcon({
+        className: 'blinking-marker',
+        html: '<div style="width: 24px; height: 24px; background-color: red; border-radius: 50%;"></div>',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12] // Center the icon
+    });
+
+    // Base layers
+    var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 25,
+    });
+
+    var satellite = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+        maxZoom: 25,
+    });
+
+    // Initialize the map at the cemetery's location
+    var map = L.map('map', {
+        center: [15.107161, 120.624238], // Replace with the cemetery's latitude and longitude
+        zoom: 19,
+        layers: [osm] // Default layer
+    });
+
+    // Base maps object
+    var baseMaps = {
+        "Street View": osm,
+        "Satellite View": satellite
+    };
+
+    // Add layer control
+    L.control.layers(baseMaps).addTo(map);
+
+    // Gravesite data (replace with actual data)
+    var gravesites = [
+        { id: 1, name: "Kyle Darren", lat: 15.10727328, lng: 120.62461202 },
+        { id: 2, name: "Denice", lat: 15.10731987, lng: 120.62454790 },
+        { id: 3, name: "Robert Brown", lat: 51.507, lng: -0.092 },
+        // Add more gravesites here
+    ];
+
+    // Add gravestone markers to the map
+    gravesites.forEach(function(site) {
+        L.marker([site.lat, site.lng], { icon: gravestoneIcon }).addTo(map)
+            .bindPopup(site.name);
+    });
+
+    // Function to search for a gravesite
+    function searchGravesite(name) {
+        var result = gravesites.find(site => site.name.toLowerCase() === name.toLowerCase());
+        if (result) {
+            map.setView([result.lat, result.lng], 18);
+            guideToGravesite(result.lat, result.lng);
+        } else {
+            alert('Gravesite not found');
+        }
+    }
+
+    // Function to guide the user to the gravesite
+    function guideToGravesite(lat, lng) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+            var userLat = position.coords.latitude;
+            var userLng = position.coords.longitude;
+
+            var control = L.Routing.control({
+                waypoints: [
+                    L.latLng(userLat, userLng), // User's current location
+                    L.latLng(lat, lng) // Gravesite location
+                ],
+                routeWhileDragging: true,
+                addWaypoints: false, // Disable adding new waypoints
+                draggableWaypoints: false, // Prevent dragging waypoints
+                fitSelectedRoutes: true, // Center the map to fit the route
+                showAlternatives: false, // Disable alternative routes
+                createMarker: function(i, waypoint, n) {
+                    var markerIcon = (i === 0) ? blinkingIcon : gravestoneIcon; // Use blinking icon for start, gravestone icon for end
+                    return L.marker(waypoint.latLng, { icon: markerIcon }).bindPopup((i === 0) ? 'You are here' : 'Gravesite');
+                },
+                lineOptions: {
+                    styles: [{ color: '#007bff', weight: 6 }] // Route line style
+                }
+            }).addTo(map);
+
+            var currentStepIndex = 0;
+            control.on('routesfound', function(e) {
+                var routes = e.routes;
+                var steps = routes[0].instructions;
+                updatePopupStep(steps[currentStepIndex]);
+
+                // Show the direction bubble
+                document.getElementById('directionBubble').style.display = 'block';
+
+                // When passing a waypoint, move closer to the next step
+                control.on('waypointpassed', function() {
+                    currentStepIndex++;
+                    if (currentStepIndex < steps.length) {
+                        updatePopupStep(steps[currentStepIndex]);
+                    } else {
+                        document.getElementById('directionPopup').style.display = 'none';
+                    }
+                });
+            });
+        }, function() {
+            alert('Could not get your location');
+        });
+    }
+
+    // Function to update the direction popup
+    function updatePopupStep(step) {
+        document.getElementById('stepInfo').textContent = "Next Step";
+        document.getElementById('nextDirection').textContent = step.text;
+    }
+
+    // Bubble functionality
+    var directionBubble = document.getElementById('directionBubble');
+    var directionPopup = document.getElementById('directionPopup');
+
+    // Show the popup when clicking the bubble
+    directionBubble.addEventListener('click', function() {
+        directionPopup.style.display = 'block';
+    });
+
+    // Close the popup
+    document.getElementById('closePopup').addEventListener('click', function() {
+        directionPopup.style.display = 'none';
+    });
+
+    // Add event listener to the search button
+    document.getElementById('searchButton').addEventListener('click', function() {
+        var searchInput = document.getElementById('searchInput').value;
+        searchGravesite(searchInput);
+    });
+
+</script>
+
+</body>
+</html>
