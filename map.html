@@ -261,47 +261,61 @@
                 // Show the direction bubble
                 document.getElementById('directionBubble').style.display = 'block';
 
-                // When passing a waypoint, move closer to the next step
-                control.on('waypointpassed', function() {
-                    currentStepIndex++;
-                    if (currentStepIndex < steps.length) {
-                        updatePopupStep(steps[currentStepIndex]);
-                    } else {
-                        document.getElementById('directionPopup').style.display = 'none';
-                    }
+                // When passing next direction, update
+                control.on('routeselected', function(e) {
+                    updatePopupStep(steps[++currentStepIndex]);
                 });
             });
-        }, function() {
-            alert('Could not get your location');
         });
     }
 
-    // Function to update the direction popup
+    // Handle the search button click event
+    document.getElementById('searchButton').addEventListener('click', function() {
+        var searchValue = document.getElementById('searchInput').value;
+        searchGravesite(searchValue);
+    });
+
+    // Toggle direction popup visibility
+    document.getElementById('directionBubble').addEventListener('click', function() {
+        var directionPopup = document.getElementById('directionPopup');
+        if (directionPopup.style.display === 'block') {
+            directionPopup.style.display = 'none';
+        } else {
+            directionPopup.style.display = 'block';
+        }
+    });
+
+    // Close direction popup
+    document.getElementById('closePopup').addEventListener('click', function() {
+        document.getElementById('directionPopup').style.display = 'none';
+    });
+
+    // Function to update direction popup with the current step
     function updatePopupStep(step) {
-        document.getElementById('stepInfo').textContent = "Next Step";
-        document.getElementById('nextDirection').textContent = step.text;
+        document.getElementById('stepInfo').innerHTML = "Next Step";
+        document.getElementById('nextDirection').innerHTML = step.text;
     }
 
-    // Bubble functionality
-    var directionBubble = document.getElementById('directionBubble');
-    var directionPopup = document.getElementById('directionPopup');
+    // Get the 'id' parameter from the URL
+    function getUrlParameter(name) {
+        name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+        var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+        var results = regex.exec(window.location.search);
+        return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+    }
 
-    // Show the popup when clicking the bubble
-    directionBubble.addEventListener('click', function() {
-        directionPopup.style.display = 'block';
-    });
+    // Extract gravesite ID from the URL and center map on it
+    var gravesiteId = getUrlParameter('id');
 
-    // Close the popup
-    document.getElementById('closePopup').addEventListener('click', function() {
-        directionPopup.style.display = 'none';
-    });
-
-    // Add event listener to the search button
-    document.getElementById('searchButton').addEventListener('click', function() {
-        var searchInput = document.getElementById('searchInput').value;
-        searchGravesite(searchInput);
-    });
-
+    if (gravesiteId) {
+        var gravesite = gravesites.find(site => site.id == gravesiteId);
+        if (gravesite) {
+            map.setView([gravesite.lat, gravesite.lng], 18); // Center the map on the gravesite
+            guideToGravesite(gravesite.lat, gravesite.lng); // Guide the user to the gravesite
+        } else {
+            alert('Gravesite not found');
+        }
+    }
 </script>
 
 </body>
