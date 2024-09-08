@@ -14,41 +14,8 @@
         }
 
         #map {
-            height: calc(100vh - 140px); /* Full height minus search container height */
+            height: 100vh;
             width: 100%;
-        }
-
-        #search-container {
-            padding: 10px;
-            text-align: center;
-            background-color: #f8f8f8;
-            border-bottom: 1px solid #ddd;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        #searchInput {
-            width: 70%;
-            padding: 10px;
-            font-size: 16px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-            max-width: 400px;
-        }
-
-        #searchButton {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            margin-left: 10px;
-        }
-
-        #searchButton:hover {
-            background-color: #0056b3;
         }
 
         /* Blinking effect for the user marker */
@@ -120,16 +87,6 @@
 
         /* Mobile-specific styles */
         @media (max-width: 600px) {
-            #searchInput {
-                width: 100%;
-                margin-bottom: 10px;
-            }
-
-            #searchButton {
-                width: 100%;
-                margin-left: 0;
-            }
-
             #directionPopup {
                 width: 90%;
                 left: 5%;
@@ -138,11 +95,6 @@
     </style>
 </head>
 <body>
-
-<div id="search-container">
-    <input type="text" id="searchInput" placeholder="Enter gravesite name">
-    <button id="searchButton">Search</button>
-</div>
 
 <div id="map"></div>
 
@@ -210,23 +162,6 @@
         // Add more gravesites here
     ];
 
-    // Add gravestone markers to the map
-    gravesites.forEach(function(site) {
-        L.marker([site.lat, site.lng], { icon: gravestoneIcon }).addTo(map)
-            .bindPopup(site.name);
-    });
-
-    // Function to search for a gravesite
-    function searchGravesite(name) {
-        var result = gravesites.find(site => site.name.toLowerCase() === name.toLowerCase());
-        if (result) {
-            map.setView([result.lat, result.lng], 18);
-            guideToGravesite(result.lat, result.lng);
-        } else {
-            alert('Gravesite not found');
-        }
-    }
-
     // Function to guide the user to the gravesite
     function guideToGravesite(lat, lng) {
         navigator.geolocation.getCurrentPosition(function(position) {
@@ -269,12 +204,6 @@
         });
     }
 
-    // Handle the search button click event
-    document.getElementById('searchButton').addEventListener('click', function() {
-        var searchValue = document.getElementById('searchInput').value;
-        searchGravesite(searchValue);
-    });
-
     // Toggle direction popup visibility
     document.getElementById('directionBubble').addEventListener('click', function() {
         var directionPopup = document.getElementById('directionPopup');
@@ -311,10 +240,13 @@
         var gravesite = gravesites.find(site => site.id == gravesiteId);
         if (gravesite) {
             map.setView([gravesite.lat, gravesite.lng], 18); // Center the map on the gravesite
+            L.marker([gravesite.lat, gravesite.lng], { icon: gravestoneIcon }).addTo(map).bindPopup(gravesite.name);
             guideToGravesite(gravesite.lat, gravesite.lng); // Guide the user to the gravesite
         } else {
             alert('Gravesite not found');
         }
+    } else {
+        alert('No gravesite ID provided');
     }
 </script>
 
