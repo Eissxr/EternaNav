@@ -21,7 +21,6 @@
         /* Blinking effect for the user marker */
         .blinking-marker {
             animation: blinking 1.5s infinite;
-            position: relative;
         }
 
         @keyframes blinking {
@@ -94,18 +93,27 @@
             }
         }
 
-        /* Arrow orbiting the blinking marker */
-        .blinking-marker .arrow {
+        /* Custom user marker */
+        .blinking-marker {
+            position: relative;
+            width: 24px; 
+            height: 24px; 
+            background-color: red; 
+            border-radius: 50%; 
+            border: 2px solid white; /* White border */
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5); /* Circular shadow */
+        }
+
+        .pointer {
             position: absolute;
             width: 0;
             height: 0;
             border-left: 10px solid transparent;
             border-right: 10px solid transparent;
-            border-bottom: 18px solid #007bff;
-            top: 0px; /* Adjust this value to position arrow outside */
+            border-bottom: 15px solid white;
+            top: -15px;
             left: 50%;
             transform: translateX(-50%);
-            transform-origin: 50% 100%;
         }
     </style>
 </head>
@@ -136,20 +144,12 @@
         popupAnchor: [0, -32] // Point from which the popup should open relative to the iconAnchor
     });
 
-    // Blinking user icon with arrow orbiting around
+    // Blinking user icon with pointer
     var blinkingIcon = L.divIcon({
         className: 'blinking-marker',
         html: `
-            <div style="
-                position: relative;
-                width: 24px; 
-                height: 24px; 
-                background-color: #007bff; 
-                border-radius: 50%; 
-                border: 2px solid white; /* White border */
-                box-shadow: 0 0 15px rgba(0, 0, 0, 0.5); /* Circular shadow */
-            ">
-                <div class="arrow"></div>
+            <div class="blinking-marker">
+                <div class="pointer"></div>
             </div>
         `,
         iconSize: [24, 24],
@@ -278,26 +278,20 @@
         }
     }
 
-    // Device motion and orientation API for the arrow indicator
+    // Device motion and orientation API for the pointer indicator
     window.addEventListener('load', function() {
-        var arrow = document.querySelector('.arrow');
-        var orbitRadius = 20; // Adjust this radius as needed
+        var pointer = document.querySelector('.blinking-marker .pointer');
 
-        function updateArrowIndicator(event) {
+        function updatePointerIndicator(event) {
             if (event.alpha !== null) {
                 var rotation = event.alpha; // Use alpha value for rotation
-
-                // Update arrow position to orbit around the user marker
-                var orbitX = orbitRadius * Math.sin(rotation * Math.PI / 180);
-                var orbitY = -orbitRadius * Math.cos(rotation * Math.PI / 180);
-                
-                arrow.style.transform = `translate(${orbitX}px, ${orbitY}px) rotate(${rotation}deg)`;
+                pointer.style.transform = `translateX(-50%) rotate(${rotation}deg)`;
             }
         }
 
         // Check for device orientation support
         if (window.DeviceOrientationEvent) {
-            window.addEventListener('deviceorientation', updateArrowIndicator);
+            window.addEventListener('deviceorientation', updatePointerIndicator);
         } else {
             console.log('DeviceOrientationEvent is not supported.');
         }
