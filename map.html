@@ -93,33 +93,16 @@
             }
         }
 
-        /* Arrow indicator */
-        .arrow-indicator {
+        /* Arrow inside the blinking marker */
+        .blinking-marker .arrow {
             position: absolute;
-            width: 40px;
-            height: 40px;
-            background-color: transparent;
-            border: 2px solid red;
-            border-radius: 50%;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-            pointer-events: none;
-            transform: rotate(0deg);
-            transition: transform 0.2s ease;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(0deg);
-        }
-
-        .arrow-indicator::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
             width: 0;
             height: 0;
-            border-left: 10px solid transparent;
-            border-right: 10px solid transparent;
-            border-bottom: 20px solid red;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 16px solid red;
+            top: 50%;
+            left: 50%;
             transform: translate(-50%, -50%);
         }
     </style>
@@ -140,9 +123,6 @@
     <div id="nextDirection">Next direction goes here</div>
 </div>
 
-<!-- Arrow indicator for device direction -->
-<div id="arrowIndicator" class="arrow-indicator"></div>
-
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 <script>
@@ -154,20 +134,22 @@
         popupAnchor: [0, -32] // Point from which the popup should open relative to the iconAnchor
     });
 
-    // Blinking user icon with white border and shadow
+    // Blinking user icon with arrow inside
     var blinkingIcon = L.divIcon({
         className: 'blinking-marker',
         html: `
             <div style="
+                position: relative;
                 width: 24px; 
                 height: 24px; 
                 background-color: red; 
                 border-radius: 50%; 
                 border: 2px solid white; /* White border */
-                box-shadow: 0 0 15px rgba(0, 0, 0, 0.5), /* Circular shadow */
-                            10px 0 5px rgba(0, 0, 0, 0.4); /* Directional shadow */
-                transform: rotate(45deg); /* Rotation to show direction */
-            "></div>
+                box-shadow: 0 0 15px rgba(0, 0, 0, 0.5); /* Circular shadow */
+                transform: rotate(0deg); /* Initial rotation */
+            ">
+                <div class="arrow"></div>
+            </div>
         `,
         iconSize: [24, 24],
         iconAnchor: [12, 12] // Center the icon
@@ -297,7 +279,7 @@
 
     // Device motion and orientation API for the arrow indicator
     window.addEventListener('load', function() {
-        var arrow = document.getElementById('arrowIndicator');
+        var arrow = document.querySelector('.blinking-marker .arrow');
 
         function updateArrowIndicator(event) {
             if (event.alpha !== null) {
