@@ -166,25 +166,6 @@
             font-size: 18px;
             font-weight: bold;
         }
-
-        /* Slide-up message styles */
-        #arrivalMessage {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background-color: #28a745;
-            color: white;
-            padding: 15px;
-            text-align: center;
-            transform: translateY(100%);
-            transition: transform 0.5s ease;
-            z-index: 1500;
-        }
-
-        #arrivalMessage.show {
-            transform: translateY(0);
-        }
     </style>
 </head>
 <body>
@@ -211,9 +192,6 @@
     </div>
     <div class="loading-text">Loading...</div>
 </div>
-
-<!-- Slide-up message -->
-<div id="arrivalMessage">You have arrived at the gravesite!</div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
@@ -273,57 +251,62 @@
 
     // Function to guide the user to the gravesite
     function guideToGravesite(lat, lng) {
-        L.DomUtil.get('loadingOverlay').style.visibility = 'visible'; // Show loading overlay
+        navigator.geolocation.getCurrentPosition(function(position) {
+            var userLat = position.coords.latitude;
+            var userLng = position.coords.longitude;
 
-        L.Routing.control({
-            waypoints: [
-                L.latLng(15.107161, 120.624238), // User's location
-                L.latLng(lat, lng) // Gravesite location
-            ],
-            routeWhileDragging: true,
-            fitSelectedRoutes: true, // Center the map to fit the route
-            showAlternatives: false, // Disable alternative routes
-            createMarker: function(i, waypoint, n) {
-                var markerIcon = (i === 0) ? blinkingIcon : gravestoneIcon; // Use blinking icon for start, gravestone icon for end
-                return L.marker(waypoint.latLng, { icon: markerIcon }).bindPopup((i === 0) ? 'You are here' : 'Gravesite');
-            },
-            lineOptions: {
-                styles: [{ color: '#007bff', weight: 6 }] // Route line style
-            }
-        }).addTo(map);
+            var control = L.Routing.control({
+                waypoints: [
+                    L.latLng(userLat, userLng), // User's current location
+                    L.latLng(lat, lng) // Gravesite location
+                ],
+                routeWhileDragging: true,
+                addWaypoints: false, // Disable adding new waypoints
+                draggableWaypoints: false, // Prevent dragging waypoints
+                fitSelectedRoutes: true, // Center the map to fit the route
+                showAlternatives: false, // Disable alternative routes
+                createMarker: function(i, waypoint, n) {
+                    var markerIcon = (i === 0) ? blinkingIcon : gravestoneIcon; // Use blinking icon for start, gravestone icon for end
+                    return L.marker(waypoint.latLng, { icon: markerIcon }).bindPopup((i === 0) ? 'You are here' : 'Gravesite');
+                },
+                lineOptions: {
+                    styles: [{ color: '#007bff', weight: 6 }] // Route line style
+                }
+            }).addTo(map);
 
-        var currentStepIndex = 0;
-        var totalSteps = 0;
-        var progress = document.getElementById('loadingProgress');
-        var estimatedTimeElem = document.getElementById('estimatedTime');
+            var currentStepIndex = 0;
+            var totalSteps = 0;
+            var progress = document.getElementById('loadingProgress');
+            var estimatedTimeElem = document.getElementById('estimatedTime');
 
-        // Show the loading overlay
-        var loadingOverlay = document.getElementById('loadingOverlay');
-        loadingOverlay.classList.add('visible');
+            // Show the loading overlay
+            var loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.classList.add('visible');
 
-        control.on('routesfound', function(e) {
-            var routes = e.routes;
-            var steps = routes[0].instructions;
-            totalSteps = steps.length;
-            updatePopupStep(steps[currentStepIndex], routes[0]);
+            control.on('routesfound', function(e) {
+                var routes = e.routes;
+                var steps = routes[0].instructions;
+                totalSteps = steps.length;
+                updatePopupStep(steps[currentStepIndex], routes[0]);
 
-            // Show the direction bubble
-            document.getElementById('directionBubble').style.display = 'block';
+                // Show the direction bubble
+                document.getElementById('directionBubble').style.display = 'block';
 
-            // When passing next direction, update
-            control.on('routeselected', function(e) {
-                var progressWidth = ((currentStepIndex + 1) / totalSteps) * 100;
-                progress.style.width = progressWidth + '%';
-                updatePopupStep(steps[++currentStepIndex], routes[0]);
+                // When passing next direction, update
+                control.on('routeselected', function(e) {
+                    var progressWidth = ((currentStepIndex + 1) / totalSteps) * 100;
+                    progress.style.width = progressWidth + '%';
+                    updatePopupStep(steps[++currentStepIndex], routes[0]);
+                });
+
+                // Hide the loading overlay when routing is complete
+                loadingOverlay.classList.remove('visible');
             });
 
-            // Hide the loading overlay when routing is complete
-            loadingOverlay.classList.remove('visible');
-        });
-
-        // Ensure loading overlay hides if routing fails
-        control.on('routingerror', function() {
-            loadingOverlay.classList.remove('visible');
+            // Ensure loading overlay hides if routing fails
+            control.on('routingerror', function() {
+                loadingOverlay.classList.remove('visible');
+            });
         });
     }
 
@@ -385,28 +368,6 @@
             arrow.style.transform = 'translate(-50%, -50%) rotate(' + alpha + 'deg)';
         }
     });
-
-    // Function to show arrival message
-    function showArrivalMessage() {
-        var arrivalMessage = document.getElementById('arrivalMessage');
-        arrivalMessage.classList.add('show');
-        setTimeout(function() {
-            arrivalMessage.classList.remove('show');
-        }, 5000); // Message stays for 5 seconds
-    }
-
-    // Check if user has reached the gravesite
-    function checkArrival() {
-        var userLatLng = L.DomUtil.get('userLocation'); // Get user location (you need to implement this)
-        var gravesiteLatLng = L.latLng(gravesite.lat, gravesite.lng);
-
-        if (userLatLng.distanceTo(gravesiteLatLng) < 10) { // Threshold for "reached" (10 meters)
-            showArrivalMessage();
-        }
-    }
-
-    // Call checkArrival function periodically (e.g., every 10 seconds)
-    setInterval(checkArrival, 10000);
 </script>
 
 </body>
