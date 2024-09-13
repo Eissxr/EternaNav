@@ -20,45 +20,13 @@
 
         /* Blinking effect for the user marker */
         .blinking-marker {
-            animation: blinking 2.5s infinite;
+            animation: blinking 1.5s infinite;
         }
 
         @keyframes blinking {
             0% { opacity: 1; }
             50% { opacity: 0; }
             100% { opacity: 1; }
-        }
-
-        /* User marker with arrow */
-        .user-marker {
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .user-marker .arrow {
-            width: 24px;
-            height: 24px;
-            border: 2px solid white;
-            background-color: rgba(0, 0, 0, 0.7);
-            border-radius: 50%;
-            position: absolute;
-            top: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .user-marker .arrow::after {
-            content: '';
-            width: 0;
-            height: 0;
-            border-left: 8px solid transparent;
-            border-right: 8px solid transparent;
-            border-bottom: 12px solid yellow;
-            position: absolute;
-            top: 0;
         }
 
         /* Bubble button for directions */
@@ -153,9 +121,9 @@
         popupAnchor: [0, -32] // Point from which the popup should open relative to the iconAnchor
     });
 
-    // Blinking user icon with arrow
+    // Blinking user icon with white border and shadow
     var blinkingIcon = L.divIcon({
-        className: 'user-marker blinking-marker',
+        className: 'blinking-marker',
         html: `
             <div style="
                 width: 24px; 
@@ -163,9 +131,10 @@
                 background-color: red; 
                 border-radius: 50%; 
                 border: 2px solid white; /* White border */
-                box-shadow: 0 0 15px rgba(0, 0, 0, 0.5); /* Circular shadow */
+                box-shadow: 0 0 15px rgba(0, 0, 0, 0.5), /* Circular shadow */
+                            10px 0 5px rgba(0, 0, 0, 0.4); /* Directional shadow */
+                transform: rotate(45deg); /* Rotation to show direction */
             "></div>
-            <div class="arrow"></div>
         `,
         iconSize: [24, 24],
         iconAnchor: [12, 12] // Center the icon
@@ -279,30 +248,18 @@
     var gravesiteId = getUrlParameter('id');
 
     if (gravesiteId) {
-        var gravesite = gravesites.find(site => site.id == gravesiteId);
-        if (gravesite) {
-            map.setView([gravesite.lat, gravesite.lng], 18); // Center the map on the gravesite
-            L.marker([gravesite.lat, gravesite.lng], { icon: gravestoneIcon }).addTo(map).bindPopup(gravesite.name);
-            guideToGravesite(gravesite.lat, gravesite.lng); // Guide the user to the gravesite
-        } else {
-            alert('Gravesite not found');
-        }
-    } else {
-        alert('No gravesite ID provided');
-    }
-
-    // Add user marker to the map
-    var userMarker = L.marker(map.getCenter(), { icon: blinkingIcon }).addTo(map);
-
-    if (window.DeviceOrientationEvent) {
-        window.addEventListener('deviceorientation', function(event) {
-            var rotation = event.alpha; // Get rotation of the device in degrees
-
-            if (rotation !== null) {
-                userMarker.setRotationAngle(rotation); // Rotate the arrow based on the device orientation
-                userMarker.setLatLng(map.getCenter()); // Keep the marker at the user's location
-            }
+        var gravesite = gravesites.find(function(site) {
+            return site.id == gravesiteId;
         });
+
+        if (gravesite) {
+            // Add marker for the gravesite
+            var marker = L.marker([gravesite.lat, gravesite.lng], { icon: gravestoneIcon }).addTo(map);
+            marker.bindPopup(gravesite.name).openPopup();
+
+            // Guide to the gravesite
+            guideToGravesite(gravesite.lat, gravesite.lng);
+        }
     }
 </script>
 
