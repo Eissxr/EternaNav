@@ -21,6 +21,7 @@
         /* Blinking effect for the user marker */
         .blinking-marker {
             animation: blinking 1.5s infinite;
+            position: relative; /* Position relative to allow absolute positioning of the pointer */
         }
 
         @keyframes blinking {
@@ -104,6 +105,7 @@
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.5); /* Circular shadow */
         }
 
+        /* Pointer orbiting around the user marker */
         .pointer {
             position: absolute;
             width: 0;
@@ -111,9 +113,10 @@
             border-left: 10px solid transparent;
             border-right: 10px solid transparent;
             border-bottom: 15px solid white;
-            top: -15px;
+            top: -30px;
             left: 50%;
-            transform: translateX(-50%);
+            transform: translateX(-50%) rotate(0deg);
+            transform-origin: 50% 50%;
         }
     </style>
 </head>
@@ -278,20 +281,27 @@
         }
     }
 
-    // Device motion and orientation API for the pointer indicator
+    // Device motion and orientation API for the pointer orbiting around the marker
     window.addEventListener('load', function() {
-        var pointer = document.querySelector('.blinking-marker .pointer');
+        var markerElement = document.querySelector('.blinking-marker');
+        var pointer = document.querySelector('.pointer');
 
-        function updatePointerIndicator(event) {
+        function updatePointerOrbit(event) {
             if (event.alpha !== null) {
                 var rotation = event.alpha; // Use alpha value for rotation
-                pointer.style.transform = `translateX(-50%) rotate(${rotation}deg)`;
+                var radius = 30; // Distance of the pointer from the center of the marker
+                var angle = rotation * (Math.PI / 180); // Convert degrees to radians
+                var x = radius * Math.cos(angle);
+                var y = radius * Math.sin(angle);
+
+                // Update pointer position
+                pointer.style.transform = `translate(${x}px, ${y}px) rotate(${rotation}deg)`;
             }
         }
 
         // Check for device orientation support
         if (window.DeviceOrientationEvent) {
-            window.addEventListener('deviceorientation', updatePointerIndicator);
+            window.addEventListener('deviceorientation', updatePointerOrbit);
         } else {
             console.log('DeviceOrientationEvent is not supported.');
         }
