@@ -21,7 +21,7 @@
         /* Blinking effect for the user marker */
         .blinking-marker {
             animation: blinking 1.5s infinite;
-            position: relative; /* Ensures the arrow is positioned relative to the marker */
+            position: relative;
         }
 
         @keyframes blinking {
@@ -94,24 +94,18 @@
             }
         }
 
-        /* Arrow inside the blinking marker */
+        /* Arrow outside the blinking marker */
         .blinking-marker .arrow {
             position: absolute;
             width: 0;
             height: 0;
-            border-left: 12px solid transparent;
-            border-right: 12px solid transparent;
-            border-bottom: 20px solid #007bff;
-            top: 50%;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 18px solid #007bff;
+            top: 100%;
             left: 50%;
-            transform: translate(-50%, -50%) rotate(45deg);
+            transform: translateX(-50%) rotate(45deg);
             background: linear-gradient(to bottom, rgba(0, 123, 255, 0.8), rgba(0, 123, 255, 0.5));
-            animation: rotateArrow 2s linear infinite;
-        }
-
-        @keyframes rotateArrow {
-            0% { transform: translate(-50%, -50%) rotate(0deg); }
-            100% { transform: translate(-50%, -50%) rotate(360deg); }
         }
     </style>
 </head>
@@ -142,7 +136,7 @@
         popupAnchor: [0, -32] // Point from which the popup should open relative to the iconAnchor
     });
 
-    // Blinking user icon with arrow inside
+    // Blinking user icon with arrow outside
     var blinkingIcon = L.divIcon({
         className: 'blinking-marker',
         html: ` 
@@ -154,7 +148,9 @@
                 border-radius: 50%; 
                 border: 2px solid white; /* White border */
                 box-shadow: 0 0 15px rgba(0, 0, 0, 0.5); /* Circular shadow */
-                transform: rotate(0deg); /* Initial rotation */
+                display: flex;
+                align-items: center;
+                justify-content: center;
             ">
                 <div class="arrow"></div>
             </div>
@@ -292,7 +288,7 @@
         function updateArrowIndicator(event) {
             if (event.alpha !== null) {
                 var rotation = event.alpha; // Use alpha value for rotation
-                arrow.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
+                arrow.style.transform = `translateX(-50%) rotate(${rotation}deg)`;
             }
         }
 
