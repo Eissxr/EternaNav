@@ -121,21 +121,10 @@
         popupAnchor: [0, -32] // Point from which the popup should open relative to the iconAnchor
     });
 
-    // Blinking user icon with white border and shadow
+    // Blinking user icon
     var blinkingIcon = L.divIcon({
         className: 'blinking-marker',
-        html: `
-            <div style="
-                width: 24px; 
-                height: 24px; 
-                background-color: red; 
-                border-radius: 50%; 
-                border: 2px solid white; /* White border */
-                box-shadow: 0 0 15px rgba(0, 0, 0, 0.5), /* Circular shadow */
-                            10px 0 5px rgba(0, 0, 0, 0.4); /* Directional shadow */
-                transform: rotate(45deg); /* Rotation to show direction */
-            "></div>
-        `,
+        html: '<div style="width: 24px; height: 24px; background-color: red; border-radius: 50%;"></div>',
         iconSize: [24, 24],
         iconAnchor: [12, 12] // Center the icon
     });
@@ -248,18 +237,16 @@
     var gravesiteId = getUrlParameter('id');
 
     if (gravesiteId) {
-        var gravesite = gravesites.find(function(site) {
-            return site.id == gravesiteId;
-        });
-
+        var gravesite = gravesites.find(site => site.id == gravesiteId);
         if (gravesite) {
-            // Add marker for the gravesite
-            var marker = L.marker([gravesite.lat, gravesite.lng], { icon: gravestoneIcon }).addTo(map);
-            marker.bindPopup(gravesite.name).openPopup();
-
-            // Guide to the gravesite
-            guideToGravesite(gravesite.lat, gravesite.lng);
+            map.setView([gravesite.lat, gravesite.lng], 18); // Center the map on the gravesite
+            L.marker([gravesite.lat, gravesite.lng], { icon: gravestoneIcon }).addTo(map).bindPopup(gravesite.name);
+            guideToGravesite(gravesite.lat, gravesite.lng); // Guide the user to the gravesite
+        } else {
+            alert('Gravesite not found');
         }
+    } else {
+        alert('No gravesite ID provided');
     }
 </script>
 
