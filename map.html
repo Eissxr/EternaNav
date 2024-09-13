@@ -35,24 +35,24 @@
             position: absolute;
             width: 0;
             height: 0;
-            border-left: 8px solid transparent;
-            border-right: 8px solid transparent;
-            border-bottom: 14px solid red; /* Smaller arrow and black color */
+            border-left: 8px solid transparent; /* Increased size */
+            border-right: 8px solid transparent; /* Increased size */
+            border-bottom: 16px solid red; /* Increased size */
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) rotate(0deg);
             transform-origin: center;
         }
 
-        /* Transparent user marker */
+        /* Larger transparent user marker */
         .user-marker {
-            width: 24px; 
-            height: 24px; 
+            width: 36px; 
+            height: 36px; 
             background-color: transparent; 
             border-radius: 50%; 
-            border: 2px solid white; /* White border */
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5), /* Circular shadow */
-                        10px 0 5px rgba(0, 0, 0, 0.4); /* Directional shadow */
+            border: 3px solid white; /* Increased border size */
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5), /* Increased shadow size */
+                        12px 0 7px rgba(0, 0, 0, 0.4); /* Increased shadow size */
             position: relative;
         }
 
@@ -148,7 +148,7 @@
         popupAnchor: [0, -32] // Point from which the popup should open relative to the iconAnchor
     });
 
-    // Blinking user icon with smaller arrow
+    // Blinking user icon with larger arrow
     var blinkingIcon = L.divIcon({
         className: 'blinking-marker',
         html: `
@@ -156,8 +156,8 @@
                 <div class="arrow"></div>
             </div>
         `,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12] // Center the icon
+        iconSize: [36, 36], // Increased size of the marker
+        iconAnchor: [18, 18] // Center the icon
     });
 
     // Base layers
