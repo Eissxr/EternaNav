@@ -245,18 +245,6 @@
                     updatePopupStep(steps[++currentStepIndex]);
                 });
             });
-
-            // Update the arrow indicator
-            function updateArrowIndicator(event) {
-                if (event.alpha !== null) {
-                    var arrow = document.getElementById('arrowIndicator');
-                    var rotation = event.alpha; // The rotation angle in degrees
-                    arrow.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
-                }
-            }
-
-            // Listen for device orientation events
-            window.addEventListener('deviceorientation', updateArrowIndicator);
         });
     }
 
@@ -306,6 +294,25 @@
             guideToGravesite(gravesite.lat, gravesite.lng);
         }
     }
+
+    // Device motion and orientation API for the arrow indicator
+    window.addEventListener('load', function() {
+        var arrow = document.getElementById('arrowIndicator');
+
+        function updateArrowIndicator(event) {
+            if (event.alpha !== null) {
+                var rotation = event.alpha; // Use alpha value for rotation
+                arrow.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
+            }
+        }
+
+        // Check for device orientation support
+        if (window.DeviceOrientationEvent) {
+            window.addEventListener('deviceorientation', updateArrowIndicator);
+        } else {
+            console.log('DeviceOrientationEvent is not supported.');
+        }
+    });
 </script>
 
 </body>
