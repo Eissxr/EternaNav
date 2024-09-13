@@ -29,6 +29,30 @@
             100% { opacity: 1; }
         }
 
+        /* Arrow for showing device pointing direction */
+        .direction-arrow {
+            width: 24px;
+            height: 24px;
+            border: 2px solid white;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 50%;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .direction-arrow::after {
+            content: '';
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 12px solid yellow;
+            position: absolute;
+            top: 0;
+        }
+
         /* Bubble button for directions */
         #directionBubble {
             position: fixed;
@@ -133,11 +157,17 @@
                 border: 2px solid white; /* White border */
                 box-shadow: 0 0 15px rgba(0, 0, 0, 0.5), /* Circular shadow */
                             10px 0 5px rgba(0, 0, 0, 0.4); /* Directional shadow */
-                transform: rotate(45deg); /* Rotation to show direction */
             "></div>
         `,
         iconSize: [24, 24],
         iconAnchor: [12, 12] // Center the icon
+    });
+
+    // Arrow marker for device pointing direction
+    var arrowIcon = L.divIcon({
+        className: 'direction-arrow',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12] // Center the arrow
     });
 
     // Base layers
@@ -248,19 +278,32 @@
     var gravesiteId = getUrlParameter('id');
 
     if (gravesiteId) {
-        var gravesite = gravesites.find(function(site) {
-            return site.id == gravesiteId;
-        });
-
+        var gravesite = gravesites.find(site => site.id == gravesiteId);
         if (gravesite) {
-            // Add marker for the gravesite
-            var marker = L.marker([gravesite.lat, gravesite.lng], { icon: gravestoneIcon }).addTo(map);
-            marker.bindPopup(gravesite.name).openPopup();
-
-            // Guide to the gravesite
-            guideToGravesite(gravesite.lat, gravesite.lng);
+            map.setView([gravesite.lat, gravesite.lng], 18); // Center the map on the gravesite
+            L.marker([gravesite.lat, gravesite.lng], { icon: gravestoneIcon }).addTo(map).bindPopup(gravesite.name);
+            guideToGravesite(gravesite.lat, gravesite.lng); // Guide the user to the gravesite
+        } else {
+            alert('Gravesite not found');
         }
+    } else {
+        alert('No gravesite ID provided');
     }
+
+    // Add device orientation arrow to the map
+    var arrowMarker = L.marker(map.getCenter(), { icon: arrowIcon }).addTo(map);
+
+    if (window.DeviceOrientationEvent) {
+        window.addEventListener('deviceorientation', function(event) {
+            var rotation = event.alpha; // Get rotation of the device in degrees
+
+            if (rotation !== null) {
+                arrowMarker.setRotationAngle(rotation); // Rotate the arrow based on the device orientation
+                arrowMarker.setLatLng(map.getCenter()); // Keep the arrow at the user's location
+            }
+        });
+    }
+
 </script>
 
 </body>
