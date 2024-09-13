@@ -105,6 +105,9 @@
             pointer-events: none;
             transform: rotate(0deg);
             transition: transform 0.2s ease;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(0deg);
         }
 
         .arrow-indicator::before {
@@ -244,18 +247,16 @@
             });
 
             // Update the arrow indicator
-            function updateArrowIndicator() {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(function(position) {
-                        var heading = position.coords.heading || 0; // Get device heading, if available
-                        var arrowIndicator = document.getElementById('arrowIndicator');
-                        arrowIndicator.style.transform = `rotate(${heading}deg)`;
-                    });
+            function updateArrowIndicator(event) {
+                if (event.alpha !== null) {
+                    var arrow = document.getElementById('arrowIndicator');
+                    var rotation = event.alpha; // The rotation angle in degrees
+                    arrow.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
                 }
             }
 
-            // Update arrow indicator every second
-            setInterval(updateArrowIndicator, 1000);
+            // Listen for device orientation events
+            window.addEventListener('deviceorientation', updateArrowIndicator);
         });
     }
 
