@@ -94,7 +94,7 @@
             }
         }
 
-        /* Arrow orbiting the user marker */
+        /* Arrow orbiting around the blinking marker */
         .blinking-marker .arrow {
             position: absolute;
             width: 0;
@@ -102,12 +102,10 @@
             border-left: 10px solid transparent;
             border-right: 10px solid transparent;
             border-bottom: 18px solid #007bff;
-            transform: rotate(45deg);
-            background: linear-gradient(to bottom, rgba(0, 123, 255, 0.8), rgba(0, 123, 255, 0.5));
-            /* Initially position the arrow at the bottom */
-            top: 100%;
+            top: -25px; /* Position the arrow outside the marker */
             left: 50%;
-            transform: translateX(-50%) rotate(45deg);
+            transform-origin: 50% 50%;
+            background: linear-gradient(to bottom, rgba(0, 123, 255, 0.8), rgba(0, 123, 255, 0.5));
         }
     </style>
 </head>
@@ -240,75 +238,67 @@
     document.getElementById('directionBubble').addEventListener('click', function() {
         var directionPopup = document.getElementById('directionPopup');
         if (directionPopup.style.display === 'block') {
-            directionPopup.style.display = 'none';
-        } else {
-            directionPopup.style.display = 'block';
-        }
+            directionPopup.style.display ='none'; } else { directionPopup.style.display = 'block'; } });
+
+// Close direction popup
+document.getElementById('closePopup').addEventListener('click', function() {
+    document.getElementById('directionPopup').style.display = 'none';
+});
+
+// Function to update direction popup with the current step
+function updatePopupStep(step) {
+    document.getElementById('stepInfo').innerHTML = "Next Step";
+    document.getElementById('nextDirection').innerHTML = step.text;
+}
+
+// Get the 'id' parameter from the URL
+function getUrlParameter(name) {
+    name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+    var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+    var results = regex.exec(window.location.search);
+    return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+}
+
+// Extract gravesite ID from the URL and center map on it
+var gravesiteId = getUrlParameter('id');
+
+if (gravesiteId) {
+    var gravesite = gravesites.find(function(site) {
+        return site.id == gravesiteId;
     });
 
-    // Close direction popup
-    document.getElementById('closePopup').addEventListener('click', function() {
-        document.getElementById('directionPopup').style.display = 'none';
-    });
+    if (gravesite) {
+        // Add marker for the gravesite
+        var marker = L.marker([gravesite.lat, gravesite.lng], { icon: gravestoneIcon }).addTo(map);
+        marker.bindPopup(gravesite.name).openPopup();
 
-    // Function to update direction popup with the current step
-    function updatePopupStep(step) {
-        document.getElementById('stepInfo').innerHTML = "Next Step";
-        document.getElementById('nextDirection').innerHTML = step.text;
+        // Guide to the gravesite
+        guideToGravesite(gravesite.lat, gravesite.lng);
     }
+}
 
-    // Get the 'id' parameter from the URL
-    function getUrlParameter(name) {
-        name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
-        var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
-        var results = regex.exec(window.location.search);
-        return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
-    }
+// Device motion and orientation API for the arrow indicator
+window.addEventListener('load', function() {
+    var arrow = document.querySelector('.blinking-marker .arrow');
+    var markerCenterX = 12; // Half of marker width
+    var markerCenterY = 12; // Half of marker height
+    var orbitRadius = 24; // Distance of the arrow from the center of the marker
 
-    // Extract gravesite ID from the URL and center map on it
-    var gravesiteId = getUrlParameter('id');
-
-    if (gravesiteId) {
-        var gravesite = gravesites.find(function(site) {
-            return site.id == gravesiteId;
-        });
-
-        if (gravesite) {
-            // Add marker for the gravesite
-            var marker = L.marker([gravesite.lat, gravesite.lng], { icon: gravestoneIcon }).addTo(map);
-            marker.bindPopup(gravesite.name).openPopup();
-
-            // Guide to the gravesite
-            guideToGravesite(gravesite.lat, gravesite.lng);
+    function updateArrowPosition(event) {
+        if (event.alpha !== null) {
+            var alpha = event.alpha; // Use alpha value for rotation
+            var radians = alpha * Math.PI / 180;
+            var offsetX = orbitRadius * Math.cos(radians);
+            var offsetY = orbitRadius * Math.sin(radians);
+            arrow.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
         }
     }
 
-    // Device motion and orientation API for the arrow indicator
-    window.addEventListener('load', function() {
-        var arrow = document.querySelector('.blinking-marker .arrow');
-        var angle = 0; // Angle to orbit the arrow
+    // Check for device orientation support
+    if (window.DeviceOrientationEvent) {
+        window.addEventListener('deviceorientation', updateArrowPosition);
+    } else {
+        console.log('DeviceOrientationEvent is not supported.');
+    }
+});
 
-        function updateArrowPosition(event) {
-            if (event.alpha !== null) {
-                var rotation = event.alpha; // Use alpha value for rotation
-                angle += 1; // Adjust the angle to simulate orbit
-                var radius = 30; // Distance of the arrow from the center
-                var centerX = 12; // Center x position of the marker
-                var centerY = 12; // Center y position of the marker
-                var x = centerX + radius * Math.cos(rotation * Math.PI / 180);
-                var y = centerY + radius * Math.sin(rotation * Math.PI / 180);
-                arrow.style.transform = `translate(${x}px, ${y}px)`;
-            }
-        }
-
-        // Check for device orientation support
-        if (window.DeviceOrientationEvent) {
-            window.addEventListener('deviceorientation', updateArrowPosition);
-        } else {
-            console.log('DeviceOrientationEvent is not supported.');
-        }
-    });
-</script>
-
-</body>
-</html>
