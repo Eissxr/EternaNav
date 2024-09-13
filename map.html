@@ -21,6 +21,7 @@
         /* Blinking effect for the user marker */
         .blinking-marker {
             animation: blinking 1.5s infinite;
+            position: relative;
         }
 
         @keyframes blinking {
@@ -29,28 +30,30 @@
             100% { opacity: 1; }
         }
 
-        /* Arrow for showing device pointing direction */
-        .direction-arrow {
-            width: 24px;
-            height: 24px;
-            border: 2px solid white;
-            background-color: rgba(0, 0, 0, 0.7);
-            border-radius: 50%;
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .direction-arrow::after {
-            content: '';
+        /* Arrow inside user marker */
+        .arrow {
+            position: absolute;
             width: 0;
             height: 0;
-            border-left: 8px solid transparent;
-            border-right: 8px solid transparent;
-            border-bottom: 12px solid yellow;
-            position: absolute;
-            top: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-bottom: 10px solid red; /* Smaller arrow and black color */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(0deg);
+            transform-origin: center;
+        }
+
+        /* Transparent user marker */
+        .user-marker {
+            width: 24px; 
+            height: 24px; 
+            background-color: transparent; 
+            border-radius: 50%; 
+            border: 2px solid white; /* White border */
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5), /* Circular shadow */
+                        10px 0 5px rgba(0, 0, 0, 0.4); /* Directional shadow */
+            position: relative;
         }
 
         /* Bubble button for directions */
@@ -145,29 +148,16 @@
         popupAnchor: [0, -32] // Point from which the popup should open relative to the iconAnchor
     });
 
-    // Blinking user icon with white border and shadow
+    // Blinking user icon with smaller arrow
     var blinkingIcon = L.divIcon({
         className: 'blinking-marker',
         html: `
-            <div style="
-                width: 24px; 
-                height: 24px; 
-                background-color: red; 
-                border-radius: 50%; 
-                border: 2px solid white; /* White border */
-                box-shadow: 0 0 15px rgba(0, 0, 0, 0.5), /* Circular shadow */
-                            10px 0 5px rgba(0, 0, 0, 0.4); /* Directional shadow */
-            "></div>
+            <div class="user-marker">
+                <div class="arrow"></div>
+            </div>
         `,
         iconSize: [24, 24],
         iconAnchor: [12, 12] // Center the icon
-    });
-
-    // Arrow marker for device pointing direction
-    var arrowIcon = L.divIcon({
-        className: 'direction-arrow',
-        iconSize: [24, 24],
-        iconAnchor: [12, 12] // Center the arrow
     });
 
     // Base layers
@@ -278,342 +268,28 @@
     var gravesiteId = getUrlParameter('id');
 
     if (gravesiteId) {
-        var gravesite = gravesites.find(site => site.id == gravesiteId);
+        var gravesite = gravesites.find(function(site) {
+            return site.id == gravesiteId;
+        });
+
         if (gravesite) {
-            map.setView([gravesite.lat, gravesite.lng], 18); // Center the map on the gravesite
-            L.marker([gravesite.lat, gravesite.lng], { icon: gravestoneIcon }).addTo(map).bindPopup(gravesite.name);
-            guideToGravesite(gravesite.lat, gravesite.lng); // Guide the user to the gravesite
-        } else {
-            alert('Gravesite not found');
+            // Add marker for the gravesite
+            var marker = L.marker([gravesite.lat, gravesite.lng], { icon: gravestoneIcon }).addTo(map);
+            marker.bindPopup(gravesite.name).openPopup();
+
+            // Guide to the gravesite
+            guideToGravesite(gravesite.lat, gravesite.lng);
         }
-    } else {
-        alert('No gravesite ID provided');
     }
 
-    // Add device orientation arrow to the map
-    var arrowMarker = L.marker(map.getCenter(), { icon: arrowIcon }).addTo(map);
-
-    if (window.DeviceOrientationEvent) {
-        window.addEventListener('deviceorientation', function(event) {
-            var rotation = event.alpha; // Get rotation of the device in degrees
-
-            if (rotation !== null) {
-                arrowMarker.setRotationAngle(rotation); // Rotate the arrow based on the device orientation
-                arrowMarker.setLatLng(map.getCenter()); // Keep the arrow at the user's location
-            }
-        });
-    }
-
-</script>
-
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cemetery Map</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            font-family: Arial, sans-serif;
-        }
-
-        #map {
-            height: 100vh;
-            width: 100%;
-        }
-
-        /* Blinking effect for the user marker */
-        .blinking-marker {
-            animation: blinking 1.5s infinite;
-        }
-
-        @keyframes blinking {
-            0% { opacity: 1; }
-            50% { opacity: 0; }
-            100% { opacity: 1; }
-        }
-
-        /* Arrow for showing device pointing direction */
-        .direction-arrow {
-            width: 24px;
-            height: 24px;
-            border: 2px solid white;
-            background-color: rgba(0, 0, 0, 0.7);
-            border-radius: 50%;
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .direction-arrow::after {
-            content: '';
-            width: 0;
-            height: 0;
-            border-left: 8px solid transparent;
-            border-right: 8px solid transparent;
-            border-bottom: 12px solid yellow;
-            position: absolute;
-            top: 0;
-        }
-
-        /* Bubble button for directions */
-        #directionBubble {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 60px;
-            height: 60px;
-            background-color: #007bff;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 24px;
-            cursor: pointer;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
-        }
-
-        #directionBubble:hover {
-            background-color: #0056b3;
-        }
-
-        /* Expandable popup for directions */
-        #directionPopup {
-            position: fixed;
-            bottom: 100px;
-            right: 20px;
-            width: 300px;
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-            padding: 15px;
-            display: none;
-            transition: all 0.3s ease;
-            z-index: 999;
-        }
-
-        #directionPopup .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        #directionPopup .header button {
-            background: none;
-            border: none;
-            font-size: 18px;
-            cursor: pointer;
-        }
-
-        /* Hide routing container */
-        .leaflet-routing-container {
-            display: none !important;
-        }
-
-        /* Mobile-specific styles */
-        @media (max-width: 600px) {
-            #directionPopup {
-                width: 90%;
-                left: 5%;
-            }
-        }
-    </style>
-</head>
-<body>
-
-<div id="map"></div>
-
-<!-- Bubble button for directions -->
-<div id="directionBubble">📍</div>
-
-<!-- Expandable popup for directions -->
-<div id="directionPopup">
-    <div class="header">
-        <span id="stepInfo">Current Step</span>
-        <button id="closePopup">×</button>
-    </div>
-    <div id="nextDirection">Next direction goes here</div>
-</div>
-
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
-<script>
-    // Custom gravestone icon
-    var gravestoneIcon = L.icon({
-        iconUrl: 'gravestone.png', // Replace with the path to your gravestone icon
-        iconSize: [32, 32], // Size of the icon
-        iconAnchor: [16, 32], // Point of the icon which will correspond to marker's location
-        popupAnchor: [0, -32] // Point from which the popup should open relative to the iconAnchor
-    });
-
-    // Blinking user icon with white border and shadow
-    var blinkingIcon = L.divIcon({
-        className: 'blinking-marker',
-        html: `
-            <div style="
-                width: 24px; 
-                height: 24px; 
-                background-color: red; 
-                border-radius: 50%; 
-                border: 2px solid white; /* White border */
-                box-shadow: 0 0 15px rgba(0, 0, 0, 0.5), /* Circular shadow */
-                            10px 0 5px rgba(0, 0, 0, 0.4); /* Directional shadow */
-            "></div>
-        `,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12] // Center the icon
-    });
-
-    // Arrow marker for device pointing direction
-    var arrowIcon = L.divIcon({
-        className: 'direction-arrow',
-        iconSize: [24, 24],
-        iconAnchor: [12, 12] // Center the arrow
-    });
-
-    // Base layers
-    var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 25,
-    });
-
-    var satellite = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-        maxZoom: 25,
-    });
-
-    // Initialize the map at the cemetery's location
-    var map = L.map('map', {
-        center: [15.107161, 120.624238], // Replace with the cemetery's latitude and longitude
-        zoom: 19,
-        layers: [osm] // Default layer
-    });
-
-    // Base maps object
-    var baseMaps = {
-        "Street View": osm,
-        "Satellite View": satellite
-    };
-
-    // Add layer control
-    L.control.layers(baseMaps).addTo(map);
-
-    // Gravesite data (replace with actual data)
-    var gravesites = [
-        { id: 1, name: "Kyle Darren", lat: 15.10727328, lng: 120.62461202 },
-        { id: 2, name: "Denice", lat: 15.10731987, lng: 120.62454790 },
-        { id: 3, name: "Robert Brown", lat: 51.507, lng: -0.092 },
-        // Add more gravesites here
-    ];
-
-    // Function to guide the user to the gravesite
-    function guideToGravesite(lat, lng) {
-        navigator.geolocation.getCurrentPosition(function(position) {
-            var userLat = position.coords.latitude;
-            var userLng = position.coords.longitude;
-
-            var control = L.Routing.control({
-                waypoints: [
-                    L.latLng(userLat, userLng), // User's current location
-                    L.latLng(lat, lng) // Gravesite location
-                ],
-                routeWhileDragging: true,
-                addWaypoints: false, // Disable adding new waypoints
-                draggableWaypoints: false, // Prevent dragging waypoints
-                fitSelectedRoutes: true, // Center the map to fit the route
-                showAlternatives: false, // Disable alternative routes
-                createMarker: function(i, waypoint, n) {
-                    var markerIcon = (i === 0) ? blinkingIcon : gravestoneIcon; // Use blinking icon for start, gravestone icon for end
-                    return L.marker(waypoint.latLng, { icon: markerIcon }).bindPopup((i === 0) ? 'You are here' : 'Gravesite');
-                },
-                lineOptions: {
-                    styles: [{ color: '#007bff', weight: 6 }] // Route line style
-                }
-            }).addTo(map);
-
-            var currentStepIndex = 0;
-            control.on('routesfound', function(e) {
-                var routes = e.routes;
-                var steps = routes[0].instructions;
-                updatePopupStep(steps[currentStepIndex]);
-
-                // Show the direction bubble
-                document.getElementById('directionBubble').style.display = 'block';
-
-                // When passing next direction, update
-                control.on('routeselected', function(e) {
-                    updatePopupStep(steps[++currentStepIndex]);
-                });
-            });
-        });
-    }
-
-    // Toggle direction popup visibility
-    document.getElementById('directionBubble').addEventListener('click', function() {
-        var directionPopup = document.getElementById('directionPopup');
-        if (directionPopup.style.display === 'block') {
-            directionPopup.style.display = 'none';
-        } else {
-            directionPopup.style.display = 'block';
+    // Update arrow orientation based on device orientation
+    window.addEventListener('deviceorientation', function(event) {
+        var arrow = document.querySelector('.arrow');
+        if (arrow) {
+            var alpha = event.alpha; // Direction the device is facing
+            arrow.style.transform = 'translate(-50%, -50%) rotate(' + alpha + 'deg)';
         }
     });
-
-    // Close direction popup
-    document.getElementById('closePopup').addEventListener('click', function() {
-        document.getElementById('directionPopup').style.display = 'none';
-    });
-
-    // Function to update direction popup with the current step
-    function updatePopupStep(step) {
-        document.getElementById('stepInfo').innerHTML = "Next Step";
-        document.getElementById('nextDirection').innerHTML = step.text;
-    }
-
-    // Get the 'id' parameter from the URL
-    function getUrlParameter(name) {
-        name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
-        var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
-        var results = regex.exec(window.location.search);
-        return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
-    }
-
-    // Extract gravesite ID from the URL and center map on it
-    var gravesiteId = getUrlParameter('id');
-
-    if (gravesiteId) {
-        var gravesite = gravesites.find(site => site.id == gravesiteId);
-        if (gravesite) {
-            map.setView([gravesite.lat, gravesite.lng], 18); // Center the map on the gravesite
-            L.marker([gravesite.lat, gravesite.lng], { icon: gravestoneIcon }).addTo(map).bindPopup(gravesite.name);
-            guideToGravesite(gravesite.lat, gravesite.lng); // Guide the user to the gravesite
-        } else {
-            alert('Gravesite not found');
-        }
-    } else {
-        alert('No gravesite ID provided');
-    }
-
-    // Add device orientation arrow to the map
-    var arrowMarker = L.marker(map.getCenter(), { icon: arrowIcon }).addTo(map);
-
-    if (window.DeviceOrientationEvent) {
-        window.addEventListener('deviceorientation', function(event) {
-            var rotation = event.alpha; // Get rotation of the device in degrees
-
-            if (rotation !== null) {
-                arrowMarker.setRotationAngle(rotation); // Rotate the arrow based on the device orientation
-                arrowMarker.setLatLng(map.getCenter()); // Keep the arrow at the user's location
-            }
-        });
-    }
-
 </script>
 
 </body>
