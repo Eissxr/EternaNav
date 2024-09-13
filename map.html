@@ -92,6 +92,33 @@
                 left: 5%;
             }
         }
+
+        /* Arrow indicator */
+        .arrow-indicator {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background-color: transparent;
+            border: 2px solid red;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+            transform: rotate(0deg);
+            transition: transform 0.2s ease;
+        }
+
+        .arrow-indicator::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 20px solid red;
+            transform: translate(-50%, -50%);
+        }
     </style>
 </head>
 <body>
@@ -109,6 +136,9 @@
     </div>
     <div id="nextDirection">Next direction goes here</div>
 </div>
+
+<!-- Arrow indicator for device direction -->
+<div id="arrowIndicator" class="arrow-indicator"></div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
@@ -212,6 +242,20 @@
                     updatePopupStep(steps[++currentStepIndex]);
                 });
             });
+
+            // Update the arrow indicator
+            function updateArrowIndicator() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(function(position) {
+                        var heading = position.coords.heading || 0; // Get device heading, if available
+                        var arrowIndicator = document.getElementById('arrowIndicator');
+                        arrowIndicator.style.transform = `rotate(${heading}deg)`;
+                    });
+                }
+            }
+
+            // Update arrow indicator every second
+            setInterval(updateArrowIndicator, 1000);
         });
     }
 
