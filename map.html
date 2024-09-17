@@ -31,18 +31,21 @@
         }
 
         /* Arrow inside user marker */
-        .arrow {
-            position: absolute;
-            width: 0;
-            height: 0;
-            border-left: 7px solid transparent; /* Increased size */
-            border-right: 7px solid transparent; /* Increased size */
-            border-bottom: 16px solid red; /* Increased size */
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(0deg);
-            transform-origin: center;
-        }
+.arrow {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 7px solid transparent; /* Increased size */
+    border-right: 7px solid transparent; /* Increased size */
+    border-bottom: 16px solid red; /* Increased size */
+    border-bottom-width: 16px; /* Border width for the arrow */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(0deg);
+    transform-origin: center;
+    /* Add white border to fit the arrow */
+    box-shadow: 0 0 0 2px white; /* White border with 2px width */
+}
 
         /* Larger transparent user marker */
         .user-marker {
