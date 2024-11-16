@@ -35,81 +35,25 @@
             position: absolute;
             width: 0;
             height: 0;
-            border-left: 7px solid transparent; /* Increased size */
-            border-right: 7px solid transparent; /* Increased size */
-            border-bottom: 16px solid red; /* Increased size */
+            border-left: 5px solid transparent; /* Smaller size */
+            border-right: 5px solid transparent; /* Smaller size */
+            border-bottom: 10px solid red; /* Smaller size */
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) rotate(0deg);
             transform-origin: center;
         }
 
-        /* Larger transparent user marker */
+        /* Smaller transparent user marker */
         .user-marker {
-            width: 36px; 
-            height: 36px; 
+            width: 24px; /* Smaller size */
+            height: 24px; /* Smaller size */
             background-color: #007bff; 
             border-radius: 50%; 
-            border: 3px solid white; /* Increased border size */
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5), /* Increased shadow size */
-                        12px 0 7px rgba(0, 0, 0, 0.4); /* Increased shadow size */
+            border: 2px solid white; /* Smaller border size */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5), /* Smaller shadow size */
+                        8px 0 5px rgba(0, 0, 0, 0.4); /* Smaller shadow size */
             position: relative;
-        }
-
-        /* Bubble button for directions */
-        #directionBubble {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 60px;
-            height: 60px;
-            background-color: #007bff;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 24px;
-            cursor: pointer;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
-        }
-
-        #directionBubble:hover {
-            background-color: #0056b3;
-        }
-
-        /* Expandable popup for directions */
-        #directionPopup {
-            position: fixed;
-            bottom: 100px;
-            right: 20px;
-            width: 300px;
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-            padding: 15px;
-            display: none;
-            transition: all 0.3s ease;
-            z-index: 999;
-        }
-
-        #directionPopup .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        #directionPopup .header button {
-            background: none;
-            border: none;
-            font-size: 18px;
-            cursor: pointer;
-        }
-
-        /* Hide routing container */
-        .leaflet-routing-container {
-            display: none !important;
         }
 
         /* Mobile-specific styles */
@@ -119,92 +63,24 @@
                 left: 5%;
             }
         }
-
-        /* Loading overlay styles */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-            visibility: hidden;
-            opacity: 0;
-            transition: visibility 0s, opacity 0.5s ease;
-        }
-
-        .loading-overlay.visible {
-            visibility: visible;
-            opacity: 1;
-        }
-
-        /* Loading bar styles */
-        .loading-bar {
-            width: 50%;
-            background-color: #fff;
-            border-radius: 5px;
-            overflow: hidden;
-            border: 1px solid #ccc;
-            margin-bottom: 10px;
-        }
-
-        .loading-bar .progress {
-            width: 0;
-            height: 5px;
-            background-color: #007bff;
-            transition: width 0.3s;
-        }
-
-        /* Loading text styles */
-        .loading-text {
-            color: #fff;
-            font-size: 18px;
-            font-weight: bold;
-        }
     </style>
 </head>
 <body>
 
 <div id="map"></div>
 
-<!-- Bubble button for directions -->
-<div id="directionBubble">📍</div>
-
-<!-- Expandable popup for directions -->
-<div id="directionPopup">
-    <div class="header">
-        <span id="stepInfo">Current Step</span>
-        <button id="closePopup">×</button>
-    </div>
-    <div id="nextDirection">Next direction goes here</div>
-    <div id="estimatedTime">Estimated time goes here</div>
-</div>
-
-<!-- Loading overlay -->
-<div class="loading-overlay" id="loadingOverlay">
-    <div class="loading-bar">
-        <div class="progress" id="loadingProgress"></div>
-    </div>
-    <div class="loading-text">Loading...</div>
-</div>
-
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 <script>
-    // Custom gravestone icon
+    // Custom gravestone icon with smaller size
     var gravestoneIcon = L.icon({
         iconUrl: 'gravestone.png', // Replace with the path to your gravestone icon
-        iconSize: [32, 32], // Size of the icon
-        iconAnchor: [16, 32], // Point of the icon which will correspond to marker's location
-        popupAnchor: [0, -32] // Point from which the popup should open relative to the iconAnchor
+        iconSize: [20, 20], // Smaller size of the icon
+        iconAnchor: [10, 20], // Point of the icon which will correspond to marker's location
+        popupAnchor: [0, -20] // Adjusted for smaller icon size
     });
 
-    // Blinking user icon with larger arrow
+    // Blinking user icon with smaller arrow
     var blinkingIcon = L.divIcon({
         className: 'blinking-marker',
         html: `
@@ -212,8 +88,8 @@
                 <div class="arrow"></div>
             </div>
         `,
-        iconSize: [36, 36], // Increased size of the marker
-        iconAnchor: [18, 18] // Center the icon
+        iconSize: [24, 24], // Smaller size of the marker
+        iconAnchor: [12, 12] // Center the icon
     });
 
     // Base layers
@@ -241,106 +117,70 @@
     // Add layer control
     L.control.layers(baseMaps).addTo(map);
 
-    // Gravesite data (replace with actual data)
-    var gravesites = [
-        { id: 1, name: "Kyle Darren", lat: 15.10727328, lng: 120.62461202 },
-        { id: 2, name: "Denice", lat: 15.10731987, lng: 120.62454790 },
-        { id: 3, name: "Robert Brown", lat: 51.507, lng: -0.092 },
-        // Add more gravesites here
+    // Define locations for multiple gravesites (with id)
+    const gateCoord = [15.107538, 120.624280]; // Gate coordinates
+    const firstCheckpoint = [15.107453, 120.624213]; // First checkpoint coordinates
+
+    // Multiple gravesite coordinates (first row) with id
+    const gravesites = [
+        { id: 1, coords: [15.107436, 120.624286], name: "Gravesite of Kyle Darren" },
+        { id: 2, coords: [15.107425, 120.624307], name: "Gravesite of Denice" },
     ];
 
-    // Function to guide the user to the gravesite
-    function guideToGravesite(lat, lng) {
-        navigator.geolocation.getCurrentPosition(function(position) {
-            var userLat = position.coords.latitude;
-            var userLng = position.coords.longitude;
+    // Second checkpoint coordinates
+    const secondCheckpoint = [15.107441, 120.624218]; // New second checkpoint coordinates
 
-            var control = L.Routing.control({
-                waypoints: [
-                    L.latLng(userLat, userLng), // User's current location
-                    L.latLng(lat, lng) // Gravesite location
-                ],
-                routeWhileDragging: true,
-                addWaypoints: false, // Disable adding new waypoints
-                draggableWaypoints: false, // Prevent dragging waypoints
-                fitSelectedRoutes: true, // Center the map to fit the route
-                showAlternatives: false, // Disable alternative routes
-                createMarker: function(i, waypoint, n) {
-                    var markerIcon = (i === 0) ? blinkingIcon : gravestoneIcon; // Use blinking icon for start, gravestone icon for end
-                    return L.marker(waypoint.latLng, { icon: markerIcon }).bindPopup((i === 0) ? 'You are here' : 'Gravesite');
-                },
-                lineOptions: {
-                    styles: [{ color: '#007bff', weight: 6 }] // Route line style
-                }
-            }).addTo(map);
+    // Second row gravesite coordinates (with id)
+    const secondRowGravesites = [
+        { id: 3, coords: [15.107411, 120.624276], name: "Second Row Gravesite" } // Second row gravesite coordinates
+    ];
 
-            var currentStepIndex = 0;
-            var totalSteps = 0;
-            var progress = document.getElementById('loadingProgress');
-            var estimatedTimeElem = document.getElementById('estimatedTime');
+    // Define walking path (split into two sections)
+    const firstPathCoords = [
+        gateCoord,
+        firstCheckpoint,
+        ...gravesites.map(grave => grave.coords)
+    ];
 
-            // Show the loading overlay
-            var loadingOverlay = document.getElementById('loadingOverlay');
-            loadingOverlay.classList.add('visible');
+    const secondPathCoords = [
+        gateCoord,  // Connect gate to second checkpoint
+        secondCheckpoint,
+        ...secondRowGravesites.map(grave => grave.coords)
+    ];
 
-            control.on('routesfound', function(e) {
-                var routes = e.routes;
-                var steps = routes[0].instructions;
-                totalSteps = steps.length;
-                updatePopupStep(steps[currentStepIndex], routes[0]);
+    // Create polyline for the walking paths
+    const firstWalkingPath = L.polyline(firstPathCoords, { color: 'green' }).addTo(map);
+    const secondWalkingPath = L.polyline(secondPathCoords, { color: 'blue' }).addTo(map);
 
-                // Show the direction bubble
-                document.getElementById('directionBubble').style.display = 'block';
-
-                // When passing next direction, update
-                control.on('routeselected', function(e) {
-                    var progressWidth = ((currentStepIndex + 1) / totalSteps) * 100;
-                    progress.style.width = progressWidth + '%';
-                    updatePopupStep(steps[++currentStepIndex], routes[0]);
-                });
-
-                // Hide the loading overlay when routing is complete
-                loadingOverlay.classList.remove('visible');
-            });
-
-            // Ensure loading overlay hides if routing fails
-            control.on('routingerror', function() {
-                loadingOverlay.classList.remove('visible');
-            });
-        });
-    }
-
-    // Toggle direction popup visibility
-    document.getElementById('directionBubble').addEventListener('click', function() {
-        var directionPopup = document.getElementById('directionPopup');
-        if (directionPopup.style.display === 'block') {
-            directionPopup.style.display = 'none';
-        } else {
-            directionPopup.style.display = 'block';
-        }
+    // Add gravestone markers for first row gravesites (with id)
+    const gravesiteMarkers = [];
+    gravesites.forEach(grave => {
+        const marker = L.marker(grave.coords, { icon: gravestoneIcon }).addTo(map).bindPopup(`
+            <b>${grave.name}</b><br>
+            ID: ${grave.id}  <!-- Display the id -->
+        `);
+        gravesiteMarkers.push(marker);
     });
 
-    // Close direction popup
-    document.getElementById('closePopup').addEventListener('click', function() {
-        document.getElementById('directionPopup').style.display = 'none';
+    // Add gravestone markers for second row gravesites (with id)
+    secondRowGravesites.forEach(grave => {
+        const marker = L.marker(grave.coords, { icon: gravestoneIcon }).addTo(map).bindPopup(`
+            <b>${grave.name}</b><br>
+            ID: ${grave.id}  <!-- Display the id -->
+        `);
+        gravesiteMarkers.push(marker);
     });
 
-    // Function to update direction popup with the current step
-    function updatePopupStep(step, route) {
-        var estimatedTime = route.summary.totalTime.toFixed(0); // Estimated time in seconds
-        var stepText = step.text;
-        document.getElementById('stepInfo').innerHTML = "Next Step";
-        document.getElementById('nextDirection').innerHTML = stepText;
-        document.getElementById('estimatedTime').innerHTML = `Estimated time: ${Math.floor(estimatedTime / 60)} min ${Math.round(estimatedTime % 60)} sec`;
-    }
-
-    // Get the 'id' parameter from the URL
+    // Function to extract a URL parameter by name
     function getUrlParameter(name) {
-        name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
-        var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
-        var results = regex.exec(window.location.search);
-        return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+        var url = window.location.href;
+        var regex = new RegExp('[?&]' + name + '=([^&]*)');
+        var results = regex.exec(url);
+        return results ? decodeURIComponent(results[1]) : null;
     }
+
+    // Add user marker (always visible)
+    var userMarker = L.marker([15.107161, 120.624238], { icon: blinkingIcon }).addTo(map); // Example location
 
     // Extract gravesite ID from the URL and center map on it
     var gravesiteId = getUrlParameter('id');
@@ -350,24 +190,99 @@
             return site.id == gravesiteId;
         });
 
+        // Check in the second row gravesites if not found in the first row
+        if (!gravesite) {
+            gravesite = secondRowGravesites.find(function(site) {
+                return site.id == gravesiteId;
+            });
+        }
+
         if (gravesite) {
             // Add marker for the gravesite
-            var marker = L.marker([gravesite.lat, gravesite.lng], { icon: gravestoneIcon }).addTo(map);
+            var marker = L.marker(gravesite.coords, { icon: gravestoneIcon }).addTo(map);
             marker.bindPopup(gravesite.name).openPopup();
 
-            // Guide to the gravesite
-            guideToGravesite(gravesite.lat, gravesite.lng);
+            // Center the map on the selected gravesite
+            map.setView(gravesite.coords, 19);  // Zoom level 19 is close-up for gravesite
+
+            // Optionally, guide to the gravesite (can be implemented later)
+            // guideToGravesite(gravesite.coords); // Uncomment if guiding functionality is needed
+
+            // Hide all paths and gravesites initially
+            firstWalkingPath.setStyle({ opacity: 0 });
+            secondWalkingPath.setStyle({ opacity: 0 });
+            gravesiteMarkers.forEach(function(marker) {
+                marker.setOpacity(0);
+            });
+
+            // Show the correct path and gravesites based on selected id
+            if (gravesite.id === 1 || gravesite.id === 2) {
+                firstWalkingPath.setStyle({ opacity: 1 });
+                gravesiteMarkers.forEach(function(marker) {
+                    if (marker.getLatLng().equals(gravesite.coords)) {
+                        marker.setOpacity(1); // Only show the selected gravesite
+                    }
+                });
+            } else if (gravesite.id === 3) {
+                secondWalkingPath.setStyle({ opacity: 1 });
+                gravesiteMarkers.forEach(function(marker) {
+                    if (marker.getLatLng().equals(gravesite.coords)) {
+                        marker.setOpacity(1); // Only show the selected gravesite
+                    }
+                });
+            }
         }
     }
 
-    // Update arrow orientation based on device orientation
-    window.addEventListener('deviceorientation', function(event) {
-        var arrow = document.querySelector('.arrow');
-        if (arrow) {
-            var alpha = event.alpha; // Direction the device is facing
-            arrow.style.transform = 'translate(-50%, -50%) rotate(' + alpha + 'deg)';
-        }
-    });
+// Gate coordinates (fixing user marker to this location initially)
+const gateCoordinates = [15.107538, 120.624280]; // Adjust as necessary
+
+// User marker is initially at the gate
+userMarker.setLatLng(gateCoordinates);
+
+// Proximity threshold in meters (set around 30 meters as an example)
+const proximityThreshold = 30;
+
+// Function to calculate the distance between two lat-long points
+function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+    const R = 6371e3; // Radius of the Earth in meters
+    const φ1 = (lat1 * Math.PI) / 180;
+    const φ2 = (lat2 * Math.PI) / 180;
+    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+    const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+    const a =
+        Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+        Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    const distance = R * c; // Distance in meters
+    return distance;
+}
+
+// Check user's GPS location and update marker
+function onLocationFound(e) {
+    const userLat = e.latitude;
+    const userLng = e.longitude;
+
+    // Calculate the distance from the user's location to the gate
+    const distanceToGate = getDistanceFromLatLonInMeters(userLat, userLng, gateCoordinates[0], gateCoordinates[1]);
+
+    // If user is within the proximity threshold of the gate, move the user marker
+    if (distanceToGate <= proximityThreshold) {
+        userMarker.setLatLng(gateCoordinates); // Keep user marker fixed at the gate
+        console.log('User is at the gate.');
+    } else {
+        console.log(`User is ${distanceToGate.toFixed(2)} meters away from the gate.`);
+    }
+}
+
+// Listen for GPS location updates
+map.on('locationfound', onLocationFound);
+
+// Request user's location updates
+map.locate({ watch: true, setView: false, maxZoom: 19 });
+
 </script>
 
 </body>
