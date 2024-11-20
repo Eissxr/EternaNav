@@ -63,11 +63,72 @@
                 left: 5%;
             }
         }
+	/* Modern popup container */
+#proximityPopup {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 400px;
+    background: #007bff;
+    color: white;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    padding: 15px 20px;
+    font-size: 16px;
+    text-align: center;
+    z-index: 1000;
+    display: none; /* Hidden by default */
+    animation: slideUp 0.3s ease-out; /* Smooth entrance animation */
+}
+
+#proximityPopup span {
+    font-weight: bold;
+    font-size: 18px;
+}
+
+#proximityPopup .close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: white;
+    color: #007bff;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Smooth slide-up animation */
+@keyframes slideUp {
+    from {
+        transform: translateX(-50%) translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+    }
+}
+
     </style>
 </head>
 <body>
 
 <div id="map"></div>
+
+<div id="proximityPopup">
+    <button class="close-btn" onclick="closeProximityPopup()">×</button>
+    <span id="proximityMessage">Checking proximity...</span>
+</div>
+
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
@@ -169,7 +230,25 @@
             ID: ${grave.id}  <!-- Display the id -->
         `);
         gravesiteMarkers.push(marker);
-    });
+    });// Ensure only gravestone markers are behind the user marker
+map.on('layeradd', function (e) {
+    // Check if the added layer is a marker with the gravestone icon specifically
+    if (
+        e.layer.options.icon &&
+        e.layer.options.icon.options.iconUrl === 'gravestone.png' // Match gravestone icon
+    ) {
+        // Set a lower z-index for gravestone markers
+        e.layer.setZIndexOffset(-100); // Pushes it behind other markers
+    } else if (
+        e.layer.options.icon &&
+        (e.layer.options.icon.options.iconUrl === 'gate-icon.png' || 
+         e.layer.options.icon.options.iconUrl === 'chapel-icon.png')
+    ) {
+        // Keep chapel and gate markers at a default z-index
+        e.layer.setZIndexOffset(0);
+    }
+});
+
 
     // Function to extract a URL parameter by name
     function getUrlParameter(name) {
@@ -277,11 +356,185 @@ function onLocationFound(e) {
     }
 }
 
-// Listen for GPS location updates
-map.on('locationfound', onLocationFound);
+// Show or hide the proximity popup
+function updateProximityPopup(isNear) {
+    const proximityPopup = document.getElementById('proximityPopup');
+    const proximityMessage = document.getElementById('proximityMessage');
+
+    if (isNear) {
+        proximityPopup.style.display = 'block';
+        proximityMessage.innerHTML = '✅ You are near the gate!';
+    } else {
+        proximityPopup.style.display = 'block';
+        proximityMessage.innerHTML = '❌ You are not near the gate.';
+    }
+}
+
+// Close the popup
+function closeProximityPopup() {
+    const proximityPopup = document.getElementById('proximityPopup');
+    proximityPopup.style.display = 'none';
+}
+
+// Update popup based on user location
+function onLocationFoundWithPopup(e) {
+    const userLat = e.latitude;
+    const userLng = e.longitude;
+
+    // Calculate the distance to the gate
+    const distanceToGate = getDistanceFromLatLonInMeters(userLat, userLng, gateCoordinates[0], gateCoordinates[1]);
+
+    // Update marker and popup
+    if (distanceToGate <= proximityThreshold) {
+        userMarker.setLatLng(gateCoordinates); // Move marker to gate
+        updateProximityPopup(true);
+    } else {
+        updateProximityPopup(false);
+    }
+}
+
+// Combined locationfound event handler
+map.on('locationfound', function (e) {
+    onLocationFound(e);         // Call the original function
+    onLocationFoundWithPopup(e); // Call the new function for the popup
+});
+
 
 // Request user's location updates
 map.locate({ watch: true, setView: false, maxZoom: 19 });
+
+// Step 1: Create a custom pane for the gate marker
+map.createPane('gatePane');
+map.getPane('gatePane').style.zIndex = 399; // Lower zIndex ensures it appears behind the user marker
+
+// Step 2: Define the gate icon
+var gateIcon = L.icon({
+    iconUrl: 'gate-icon.png', // Ensure this file exists in the correct location
+    iconSize: [32, 32],       // Icon size
+    iconAnchor: [16, 32],     // Anchor at the bottom center
+    popupAnchor: [0, -30]     // Popup appears above the icon
+});
+
+// Step 3: Add the gate marker and assign it to the custom pane
+var gateMarker = L.marker(gateCoord, { 
+    icon: gateIcon,
+    pane: 'gatePane' // Assign to the custom pane
+}).addTo(map);
+
+// Step 4: Bind popup to the gate marker
+gateMarker.bindPopup('<b>Cemetery Gate</b>').openPopup();
+
+
+// Chapel coordinates
+const chapelCoord = [15.107203626693096, 120.62405454580895];
+
+// Step 1: Define the chapel icon
+var chapelIcon = L.icon({
+    iconUrl: 'chapel-icon.png', // Replace with the path to your chapel icon
+    iconSize: [32, 32],         // Icon size
+    iconAnchor: [16, 32],       // Anchor at the bottom center
+    popupAnchor: [0, -30]       // Popup appears above the icon
+});
+
+// Step 2: Add the chapel marker
+var chapelMarker = L.marker(chapelCoord, { 
+    icon: chapelIcon
+}).addTo(map);
+
+// Step 3: Bind popup to the chapel marker
+chapelMarker.bindPopup('<b>Cemetery Chapel</b>').openPopup();
+
+// Define walking speed in meters per minute (adjust as needed)
+const walkingSpeed = 80; // Average walking speed ~80 meters/minute
+
+// Popup for displaying time estimate
+const timePopup = L.popup({
+    autoClose: false,
+    closeOnClick: false,
+    offset: [0, -40] // Position above the existing popups
+});
+
+// Function to calculate and display estimated time to the gravesite
+function calculateAndDisplayTime(gravesiteCoords) {
+    if (!gravesiteCoords) {
+        timePopup.setContent("No gravesite selected").setLatLng(gateCoordinates).addTo(map);
+        return;
+    }
+
+    // Combine gate coordinates and gravesite coordinates into a single path
+    const path = [gateCoordinates, ...firstPathCoords];
+
+    // Calculate total path distance using the polyline
+    const totalDistance = path.reduce((distance, coord, index) => {
+        if (index === 0) return distance; // Skip the first point
+        return (
+            distance +
+            getDistanceFromLatLonInMeters(
+                coord[0],
+                coord[1],
+                path[index - 1][0],
+                path[index - 1][1]
+            )
+        );
+    }, 0);
+
+    // Calculate estimated time in minutes
+    const estimatedTime = totalDistance / walkingSpeed;
+
+    // Update and display the popup
+    timePopup
+        .setContent(`Estimated Time: ${estimatedTime.toFixed(1)} mins`)
+        .setLatLng(gateCoordinates)
+        .addTo(map);
+}
+
+// Modify the onLocationFound function to trigger time calculation when near the gate
+function onLocationFoundWithTime(e) {
+    const userLat = e.latitude;
+    const userLng = e.longitude;
+
+    // Calculate the distance from the user's location to the gate
+    const distanceToGate = getDistanceFromLatLonInMeters(userLat, userLng, gateCoordinates[0], gateCoordinates[1]);
+
+    if (distanceToGate <= proximityThreshold) {
+        userMarker.setLatLng(gateCoordinates); // Keep user marker fixed at the gate
+        console.log('User is at the gate.');
+
+        // Trigger time calculation and display the popup
+        calculateAndDisplayTime(gravesites[0]?.coords); // Replace with the selected gravesite coordinates
+    } else {
+        console.log(`User is ${distanceToGate.toFixed(2)} meters away from the gate.`);
+        // Clear the time popup if the user is not near the gate
+        timePopup.remove();
+    }
+}
+
+// Update the event listener for user location
+map.on('locationfound', onLocationFoundWithTime);
+
+// Request user's location updates
+map.locate({ watch: true, setView: false, maxZoom: 19 });
+
+// Function to handle device orientation and update marker rotation
+function updateUserMarkerDirection(event) {
+    if (event.alpha !== null) {
+        const bearing = event.alpha; // Alpha is the compass direction in degrees
+        const arrow = document.querySelector('.arrow');
+
+        if (arrow) {
+            // Update the rotation of the arrow based on the device's orientation
+            arrow.style.transform = `translate(-50%, -50%) rotate(${bearing}deg)`;
+        }
+    }
+}
+
+// Add an event listener for device orientation
+if (window.DeviceOrientationEvent) {
+    window.addEventListener('deviceorientation', updateUserMarkerDirection);
+} else {
+    console.warn("Device orientation is not supported on this device.");
+}
+
 
 </script>
 
