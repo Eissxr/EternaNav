@@ -575,6 +575,13 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 
+navigator.geolocation.watchPosition(
+    updateLocation,
+    errorCallback,
+    { enableHighAccuracy: true }
+);
+
+
 </script>
 
 </body>
