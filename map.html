@@ -184,8 +184,8 @@
 
     // Multiple gravesite coordinates (first row) with id
     const gravesites = [
-        { id: 1, coords: [15.107436, 120.624286], name: "Gravesite of Kyle Darren" },
-        { id: 2, coords: [15.107425, 120.624307], name: "Gravesite of Denice" },
+        { id: 1, coords: [15.107436, 120.624286], name: "Gravesite of Genaro Aquino" },
+        { id: 2, coords: [15.107425, 120.624307], name: "Gravesite of Kyle Darren Aquino" },
     ];
 
     // Second checkpoint coordinates
@@ -193,7 +193,7 @@
 
     // Second row gravesite coordinates (with id)
     const secondRowGravesites = [
-        { id: 3, coords: [15.107411, 120.624276], name: "Second Row Gravesite" } // Second row gravesite coordinates
+        { id: 3, coords: [15.107411, 120.624276], name: "Gravesite of Kyle" } // Second row gravesite coordinates
     ];
 
     // Define walking path (split into two sections)
@@ -339,7 +339,8 @@ function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
     return distance;
 }
 
-// Check user's GPS location and update marker
+let userAtGate = false; // To track whether the user has reached the gate
+
 function onLocationFound(e) {
     const userLat = e.latitude;
     const userLng = e.longitude;
@@ -347,14 +348,23 @@ function onLocationFound(e) {
     // Calculate the distance from the user's location to the gate
     const distanceToGate = getDistanceFromLatLonInMeters(userLat, userLng, gateCoordinates[0], gateCoordinates[1]);
 
-    // If user is within the proximity threshold of the gate, move the user marker
-    if (distanceToGate <= proximityThreshold) {
-        userMarker.setLatLng(gateCoordinates); // Keep user marker fixed at the gate
-        console.log('User is at the gate.');
+    if (!userAtGate && distanceToGate <= proximityThreshold) {
+        // User has reached the gate, update flag and move the marker to user's location
+        userAtGate = true;
+        console.log('User has reached the gate. Marker will now follow the user.');
+    }
+
+    if (userAtGate) {
+        // After reaching the gate, let the user marker follow the user's GPS location
+        userMarker.setLatLng([userLat, userLng]);
+        console.log(`User marker moved to [${userLat}, ${userLng}].`);
     } else {
+        // Before reaching the gate, keep the user marker fixed at the gate
+        userMarker.setLatLng(gateCoordinates);
         console.log(`User is ${distanceToGate.toFixed(2)} meters away from the gate.`);
     }
 }
+
 
 // Show or hide the proximity popup
 function updateProximityPopup(isNear) {
@@ -444,76 +454,6 @@ var chapelMarker = L.marker(chapelCoord, {
 // Step 3: Bind popup to the chapel marker
 chapelMarker.bindPopup('<b>Cemetery Chapel</b>').openPopup();
 
-// Define walking speed in meters per minute (adjust as needed)
-const walkingSpeed = 80; // Average walking speed ~80 meters/minute
-
-// Popup for displaying time estimate
-const timePopup = L.popup({
-    autoClose: false,
-    closeOnClick: false,
-    offset: [0, -40] // Position above the existing popups
-});
-
-// Function to calculate and display estimated time to the gravesite
-function calculateAndDisplayTime(gravesiteCoords) {
-    if (!gravesiteCoords) {
-        timePopup.setContent("No gravesite selected").setLatLng(gateCoordinates).addTo(map);
-        return;
-    }
-
-    // Combine gate coordinates and gravesite coordinates into a single path
-    const path = [gateCoordinates, ...firstPathCoords];
-
-    // Calculate total path distance using the polyline
-    const totalDistance = path.reduce((distance, coord, index) => {
-        if (index === 0) return distance; // Skip the first point
-        return (
-            distance +
-            getDistanceFromLatLonInMeters(
-                coord[0],
-                coord[1],
-                path[index - 1][0],
-                path[index - 1][1]
-            )
-        );
-    }, 0);
-
-    // Calculate estimated time in minutes
-    const estimatedTime = totalDistance / walkingSpeed;
-
-    // Update and display the popup
-    timePopup
-        .setContent(`Estimated Time: ${estimatedTime.toFixed(1)} mins`)
-        .setLatLng(gateCoordinates)
-        .addTo(map);
-}
-
-// Modify the onLocationFound function to trigger time calculation when near the gate
-function onLocationFoundWithTime(e) {
-    const userLat = e.latitude;
-    const userLng = e.longitude;
-
-    // Calculate the distance from the user's location to the gate
-    const distanceToGate = getDistanceFromLatLonInMeters(userLat, userLng, gateCoordinates[0], gateCoordinates[1]);
-
-    if (distanceToGate <= proximityThreshold) {
-        userMarker.setLatLng(gateCoordinates); // Keep user marker fixed at the gate
-        console.log('User is at the gate.');
-
-        // Trigger time calculation and display the popup
-        calculateAndDisplayTime(gravesites[0]?.coords); // Replace with the selected gravesite coordinates
-    } else {
-        console.log(`User is ${distanceToGate.toFixed(2)} meters away from the gate.`);
-        // Clear the time popup if the user is not near the gate
-        timePopup.remove();
-    }
-}
-
-// Update the event listener for user location
-map.on('locationfound', onLocationFoundWithTime);
-
-// Request user's location updates
-map.locate({ watch: true, setView: false, maxZoom: 19 });
 
 // Function to handle device orientation and update marker rotation
 function updateUserMarkerDirection(event) {
