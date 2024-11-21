@@ -515,11 +515,8 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 
-navigator.geolocation.watchPosition(
-    updateLocation,
-    errorCallback,
-    { enableHighAccuracy: true }
-);
+map.locate({ watch: true, enableHighAccuracy: true, maximumAge: 10000 });
+
 
 
 </script>
