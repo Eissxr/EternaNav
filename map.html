@@ -410,16 +410,23 @@ function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
     return distance;
 }
 
+// Update user marker position on location updates
+function onLocationFound(e) {
+    const userLatLng = e.latlng;
 
-// Combined locationfound event handler
-map.on('locationfound', function (e) {
-    onLocationFound(e);         // Call the original function
-    onLocationFoundWithPopup(e); // Call the new function for the popup
-});
+    // Update user marker position to match current location
+    userMarker.setLatLng(userLatLng);
 
+    // Optionally center the map on the user (comment out if not needed)
+    // map.setView(userLatLng, 19);
+}
 
-// Request user's location updates
+// Remove the reference to `onLocationFoundWithPopup`, if present
+map.on('locationfound', onLocationFound);
+
+// Enable continuous location tracking
 map.locate({ watch: true, setView: false, maxZoom: 19 });
+
 
 // Step 1: Create a custom pane for the gate marker
 map.createPane('gatePane');
