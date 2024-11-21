@@ -183,10 +183,6 @@ button:hover {
 
 <div id="map"></div>
 
-<div id="proximityPopup">
-    <button class="close-btn" onclick="closeProximityPopup()">×</button>
-    <span id="proximityMessage">Checking proximity...</span>
-</div>
 
 <div id="mapGuidePopup" class="popup">
     <div class="popup-content">
@@ -414,69 +410,6 @@ function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
     return distance;
 }
 
-let userAtGate = false; // To track whether the user has reached the gate
-
-function onLocationFound(e) {
-    const userLat = e.latitude;
-    const userLng = e.longitude;
-
-    // Calculate the distance from the user's location to the gate
-    const distanceToGate = getDistanceFromLatLonInMeters(userLat, userLng, gateCoordinates[0], gateCoordinates[1]);
-
-    if (!userAtGate && distanceToGate <= proximityThreshold) {
-        // User has reached the gate, update flag and move the marker to user's location
-        userAtGate = true;
-        console.log('User has reached the gate. Marker will now follow the user.');
-    }
-
-    if (userAtGate) {
-        // After reaching the gate, let the user marker follow the user's GPS location
-        userMarker.setLatLng([userLat, userLng]);
-        console.log(`User marker moved to [${userLat}, ${userLng}].`);
-    } else {
-        // Before reaching the gate, keep the user marker fixed at the gate
-        userMarker.setLatLng(gateCoordinates);
-        console.log(`User is ${distanceToGate.toFixed(2)} meters away from the gate.`);
-    }
-}
-
-
-// Show or hide the proximity popup
-function updateProximityPopup(isNear) {
-    const proximityPopup = document.getElementById('proximityPopup');
-    const proximityMessage = document.getElementById('proximityMessage');
-
-    if (isNear) {
-        proximityPopup.style.display = 'block';
-        proximityMessage.innerHTML = '✅ You are near the gate!';
-    } else {
-        proximityPopup.style.display = 'block';
-        proximityMessage.innerHTML = '❌ You are not near the gate.';
-    }
-}
-
-// Close the popup
-function closeProximityPopup() {
-    const proximityPopup = document.getElementById('proximityPopup');
-    proximityPopup.style.display = 'none';
-}
-
-// Update popup based on user location
-function onLocationFoundWithPopup(e) {
-    const userLat = e.latitude;
-    const userLng = e.longitude;
-
-    // Calculate the distance to the gate
-    const distanceToGate = getDistanceFromLatLonInMeters(userLat, userLng, gateCoordinates[0], gateCoordinates[1]);
-
-    // Update marker and popup
-    if (distanceToGate <= proximityThreshold) {
-        userMarker.setLatLng(gateCoordinates); // Move marker to gate
-        updateProximityPopup(true);
-    } else {
-        updateProximityPopup(false);
-    }
-}
 
 // Combined locationfound event handler
 map.on('locationfound', function (e) {
