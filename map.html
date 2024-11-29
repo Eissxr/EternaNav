@@ -199,6 +199,10 @@ button:hover {
     </div>
 </div>
 
+<div id="proximityPopup">
+    <span></span>
+    <button class="close-btn" onclick="document.getElementById('proximityPopup').style.display = 'none'">×</button>
+</div>
 
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -255,8 +259,18 @@ button:hover {
 
     // Multiple gravesite coordinates (first row) with id
     const gravesites = [
-        { id: 1, coords: [15.107436, 120.624286], name: "Gravesite of Genaro Aquino" },
-        { id: 2, coords: [15.107425, 120.624307], name: "Gravesite of Kyle Darren Aquino" },
+        { id: 1, coords: [15.10742295163145, 120.62425903806684], name: "Genaro Aquino" },
+        { id: 2, coords: [15.10742295163145, 120.62425903806684], name: "Cecilia Aquino" },
+        { id: 3, coords: [15.107414535727688, 120.62426775524597], name: "Seniza Cordero" },
+	{ id: 4, coords: [15.107414535727688, 120.62426775524597], name: "Fernando Cordero" },
+	{ id: 5, coords: [15.107414535727688, 120.62426775524597], name: "Florencio Cordero" },
+	{ id: 6, coords: [15.107414535727688, 120.62426775524597], name: "Herminio Cordero" },
+	{ id: 7, coords: [15.107406119823594, 120.624281836843], name: "Segundo Dizon Jr" },
+	{ id: 8, coords: [15.107406119823594, 120.624281836843], name: "Angeles Dizon" },
+	{ id: 9, coords: [15.107406119823594, 120.624281836843], name: "Serapia Dasmarinas" },
+	{ id: 10, coords: [15.107402235560043, 120.62428787181317], name: "Serapia Dasmarinas" },
+	{ id: 11, coords: [15.107402235560043, 120.62428787181317], name: "Serapia Dasmarinas" },
+	{ id: 12, coords: [15.107402235560043, 120.62428787181317], name: "Serapia Dasmarinas" },
     ];
 
     // Second checkpoint coordinates
@@ -264,7 +278,7 @@ button:hover {
 
     // Second row gravesite coordinates (with id)
     const secondRowGravesites = [
-        { id: 3, coords: [15.107411, 120.624276], name: "Gravesite of Kyle" } // Second row gravesite coordinates
+        { id: 120, coords: [15.107411, 120.624276], name: "Gravesite of Kyle" } // Second row gravesite coordinates
     ];
 
     // Define walking path (split into two sections)
@@ -286,13 +300,39 @@ button:hover {
 
     // Add gravestone markers for first row gravesites (with id)
     const gravesiteMarkers = [];
-    gravesites.forEach(grave => {
-        const marker = L.marker(grave.coords, { icon: gravestoneIcon }).addTo(map).bindPopup(`
-            <b>${grave.name}</b><br>
-            ID: ${grave.id}  <!-- Display the id -->
+// Group markers by coordinates
+const groupedMarkers = {};
+gravesites.forEach(grave => {
+    const key = grave.coords.join(',');
+    if (!groupedMarkers[key]) {
+        groupedMarkers[key] = [];
+    }
+    groupedMarkers[key].push(grave);
+});
+
+// Add markers to the map
+Object.entries(groupedMarkers).forEach(([coords, graves]) => {
+    const [lat, lng] = coords.split(',').map(Number);
+
+    // Create a single marker for the group
+    const marker = L.marker([lat, lng], { icon: gravestoneIcon }).addTo(map);
+
+    // Bind popup with all names or one name depending on context
+    if (graves.length > 1) {
+        marker.bindPopup(`
+            <b>Graves at this location:</b><br>
+            <ul>
+                ${graves.map(grave => `<li>${grave.name} (ID: ${grave.id})</li>`).join('')}
+            </ul>
         `);
-        gravesiteMarkers.push(marker);
-    });
+    } else {
+        const grave = graves[0];
+        marker.bindPopup(`<b>${grave.name}</b><br>ID: ${grave.id}`);
+    }
+
+    gravesiteMarkers.push(marker);
+});
+
 
     // Add gravestone markers for second row gravesites (with id)
     secondRowGravesites.forEach(grave => {
@@ -365,15 +405,16 @@ map.on('layeradd', function (e) {
                 marker.setOpacity(0);
             });
 
+
             // Show the correct path and gravesites based on selected id
-            if (gravesite.id === 1 || gravesite.id === 2) {
+            if (gravesite.id >= 1 && gravesite.id <= 119) {
                 firstWalkingPath.setStyle({ opacity: 1 });
                 gravesiteMarkers.forEach(function(marker) {
                     if (marker.getLatLng().equals(gravesite.coords)) {
                         marker.setOpacity(1); // Only show the selected gravesite
                     }
                 });
-            } else if (gravesite.id === 3) {
+            } else if (gravesite.id === 120) {
                 secondWalkingPath.setStyle({ opacity: 1 });
                 gravesiteMarkers.forEach(function(marker) {
                     if (marker.getLatLng().equals(gravesite.coords)) {
@@ -520,6 +561,73 @@ document.addEventListener("DOMContentLoaded", function () {
 map.locate({ watch: true, enableHighAccuracy: true, maximumAge: 10000 });
 
 
+// Iterate through each gravesite marker to attach click event listeners
+gravesiteMarkers.forEach((marker, index) => {
+    marker.on('click', function () {
+        // Close all currently open popups
+        map.closePopup();
+
+        // Open the popup for the clicked marker
+        marker.openPopup();
+    });
+});
+// Disable interaction for hidden markers
+gravesiteMarkers.forEach(function (marker) {
+    marker.on('popupopen', function (e) {
+        if (marker.options.opacity === 0) {
+            // Close the popup immediately if the marker is hidden
+            marker.closePopup();
+        }
+    });
+});
+
+// Ensure the popup is always visible
+const proximityPopup = document.getElementById("proximityPopup");
+
+// Display the popup all the time
+proximityPopup.style.display = "block";
+
+// Function to calculate the distance between two lat-long points
+function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+    const R = 6371e3; // Radius of the Earth in meters
+    const φ1 = (lat1 * Math.PI) / 180;
+    const φ2 = (lat2 * Math.PI) / 180;
+    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+    const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+    const a =
+        Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+        Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in meters
+}
+
+// Update the message in the popup based on proximity to the gate
+function updateProximityStatus(userLat, userLng) {
+    const distance = getDistanceFromLatLonInMeters(userLat, userLng, gateCoordinates[0], gateCoordinates[1]);
+
+    if (distance <= proximityThreshold) {
+        proximityPopup.innerHTML = `<span>You are near the gate of the cemetery!</span>`;
+    } else {
+        proximityPopup.innerHTML = `<span>You are ${Math.round(distance)} meters away from the gate.</span>`;
+    }
+}
+
+// Simulate user location updates
+navigator.geolocation.watchPosition(
+    (position) => {
+        const { latitude, longitude } = position.coords;
+        userMarker.setLatLng([latitude, longitude]);
+        map.setView([latitude, longitude]);
+
+        // Update proximity message
+        updateProximityStatus(latitude, longitude);
+    },
+    (error) => {
+        console.error("Error getting user location", error);
+    },
+    { enableHighAccuracy: true }
+);
 
 </script>
 
