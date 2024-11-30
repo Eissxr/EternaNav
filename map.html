@@ -190,8 +190,8 @@ button:hover {
         <h2>Welcome!</h2>
         <p>Here's how to use the map and navigation tools:</p>
         <ul>
-            <li><strong>Blue user marker with arrow:</strong> Indicates your current location. <br>(<strong>Note: The arrow represents your current direction.</strong>strong>)</li>
-            <li><strong>Grave marker:</strong> Marks the location of the selected gravesite. <br>(<strong>Note: Only Phase 1, Rows 1 and 2 are available for navigation, subject to approval.</strong>strong>)</li>
+            <li><strong>Blue user marker with arrow:</strong> Indicates your current location. <br>(<strong>Note: The arrow represents your current direction.</strong>)</li>
+            <li><strong>Grave marker:</strong> Marks the location of the selected gravesite. <br>(<strong>Note: Only Phase 1, Rows 1 and 2 are available for navigation, subject to approval.</strong>)</li>
             <li>Navigate to the gate to move your user marker.</li>
             <li>Click on the map to explore points of interest.</li>
         </ul>
@@ -764,10 +764,14 @@ function onLocationFound(e) {
     userMarker.setLatLng(userLatLng);
 
     if (!isCentered) {
-        map.setView(userLatLng, 19);
+        map.setView(userLatLng, 19);  // Center map on user's location
         isCentered = true;
     }
+
+    // Enable dragging if it's disabled
+    map.dragging.enable();
 }
+
 
 
 // Remove the reference to `onLocationFoundWithPopup`, if present
