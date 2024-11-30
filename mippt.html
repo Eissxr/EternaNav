@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cemetery Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: Arial, sans-serif;
+        }
+
+        #map {
+            height: 100vh;
+            width: 100%;
+        }
+
+        /* Blinking effect for the user marker */
+        .blinking-marker {
+            animation: blinking 5s infinite;
+            position: relative;
+        }
+
+        @keyframes blinking {
+            0% { opacity: 1; }
+            50% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        /* Arrow inside user marker */
+        .arrow {
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent; /* Smaller size */
+            border-right: 5px solid transparent; /* Smaller size */
+            border-bottom: 10px solid red; /* Smaller size */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(0deg);
+            transform-origin: center;
+        }
+
+        /* Smaller transparent user marker */
+        .user-marker {
+            width: 24px; /* Smaller size */
+            height: 24px; /* Smaller size */
+            background-color: #007bff; 
+            border-radius: 50%; 
+            border: 2px solid white; /* Smaller border size */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5), /* Smaller shadow size */
+                        8px 0 5px rgba(0, 0, 0, 0.4); /* Smaller shadow size */
+            position: relative;
+        }
+
+        /* Mobile-specific styles */
+        @media (max-width: 600px) {
+            #directionPopup {
+                width: 90%;
+                left: 5%;
+            }
+        }
+	/* Modern popup container */
+#proximityPopup {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 400px;
+    background: #007bff;
+    color: white;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    padding: 15px 20px;
+    font-size: 16px;
+    text-align: center;
+    z-index: 1000;
+    display: none; /* Hidden by default */
+    animation: slideUp 0.3s ease-out; /* Smooth entrance animation */
+}
+
+#proximityPopup span {
+    font-weight: bold;
+    font-size: 18px;
+}
+
+#proximityPopup .close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: white;
+    color: #007bff;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Smooth slide-up animation */
+@keyframes slideUp {
+    from {
+        transform: translateX(-50%) translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+    }
+}
+
+.popup {
+    display: none; /* Hidden by default */
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+}
+
+.popup-content {
+    position: relative;
+    margin: auto;
+    top: 15%;
+    width: 80%;
+    max-width: 400px;
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+button {
+    display: block;
+    margin: 20px auto 0;
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Weather widget container */
+#weatherWidget {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.9); /* Slightly transparent background */
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px 15px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    color: #333;
+}
+
+/* Weather icon */
+#weatherIcon {
+    width: 30px;
+    height: 30px;
+    margin-right: 10px;
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 600px) {
+    #weatherWidget {
+        font-size: 12px;
+        padding: 8px 10px;
+    }
+
+    #weatherIcon {
+        width: 24px;
+        height: 24px;
+        margin-right: 8px;
+    }
+}
+
+
+    </style>
+</head>
+<body>
+<div id="weatherWidget">
+    <img id="weatherIcon" src="" alt="Weather Icon">
+    <div>
+        <div id="weatherCondition">Sunny</div>
+        <div id="weatherDetails">Temp: 30°C, Wind: 5 km/h</div>
+    </div>
+</div>
+
+<div id="map"></div>
+
+
+<div id="mapGuidePopup" class="popup">
+    <div class="popup-content">
+        <span class="close-button" id="closePopup">&times;</span>
+        <h2>Welcome!</h2>
+        <p>Here's how to use the map and navigation tools:</p>
+        <ul>
+            <li><strong>Blue user marker with arrow:</strong> Indicates your current location. <br>(<strong>Note: The arrow represents your current direction.</strong>)</li>
+            <li><strong>Grave marker:</strong> Marks the location of the selected gravesite. <br>(<strong>Note: Only Phase 1, Rows 1 and 2 are available for navigation, subject to approval.</strong>)</li>
+            <li>Navigate to the gate to move your user marker.</li>
+            <li>Click on the map to explore points of interest.</li>
+        </ul>
+        <button id="gotItButton">Got it!</button>
+    </div>
+</div>
+
+
+<div id="proximityPopup">
+    <span></span>
+    <button class="close-btn" onclick="document.getElementById('proximityPopup').style.display = 'none'">×</button>
+</div>
+
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+<script>
+    // Custom gravestone icon with smaller size
+    var gravestoneIcon = L.icon({
+        iconUrl: 'gravestone.png', // Replace with the path to your gravestone icon
+        iconSize: [20, 20], // Smaller size of the icon
+        iconAnchor: [10, 20], // Point of the icon which will correspond to marker's location
+        popupAnchor: [0, -20] // Adjusted for smaller icon size
+    });
+
+    // Blinking user icon with smaller arrow
+    var blinkingIcon = L.divIcon({
+        className: 'blinking-marker',
+        html: `
+            <div class="user-marker">
+                <div class="arrow"></div>
+            </div>
+        `,
+        iconSize: [24, 24], // Smaller size of the marker
+        iconAnchor: [12, 12] // Center the icon
+    });
+
+    // Base layers
+    var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 25,
+    });
+
+    var satellite = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+        maxZoom: 25,
+    });
+
+    // Initialize the map at the cemetery's location
+    var map = L.map('map', {
+        center: [15.107161, 120.624238], // Replace with the cemetery's latitude and longitude
+        zoom: 19,
+        layers: [osm] // Default layer
+    });
+
+    // Base maps object
+    var baseMaps = {
+        "Street View": osm,
+        "Satellite View": satellite
+    };
+
+    // Add layer control
+    L.control.layers(baseMaps).addTo(map);
+
+    // Define locations for multiple gravesites (with id)
+    const gateCoord = [15.107538, 120.624280]; // Gate coordinates
+    const firstCheckpoint = [15.107453, 120.624213]; // First checkpoint coordinates
+
+    // Multiple gravesite coordinates (first row) with id
+    const gravesites = [
+        { id: 1, coords: [15.10742295163145, 120.62425903806684], name: "Genaro Aquino" },
+        { id: 2, coords: [15.10742295163145, 120.62425903806684], name: "Cecilia Aquino" },
+        { id: 3, coords: [15.107414535727688, 120.62426775524597], name: "Seniza Cordero" },
+	{ id: 4, coords: [15.107414535727688, 120.62426775524597], name: "Fernando Cordero" },
+	{ id: 5, coords: [15.107414535727688, 120.62426775524597], name: "Florencio Cordero" },
+	{ id: 6, coords: [15.107414535727688, 120.62426775524597], name: "Herminio Cordero" },
+	{ id: 7, coords: [15.107406119823594, 120.624281836843], name: "Segundo Dizon Jr" },
+	{ id: 8, coords: [15.107406119823594, 120.624281836843], name: "Angeles Dizon" },
+	{ id: 9, coords: [15.107406119823594, 120.624281836843], name: "Serapia Dasmarinas" },
+	{ id: 10, coords: [15.107402235560043, 120.62428787181317], name: "Benito Pare Sr" },
+	{ id: 11, coords: [15.107402235560043, 120.62428787181317], name: "Jennifer Benito" },
+	{ id: 12, coords: [15.107402235560043, 120.62428787181317], name: "Edsel Pineda" },
+	{ id: 13, coords: [15.107399646051427, 120.62429524788732], name: "Reymundo Espiritu" },
+	{ id: 14, coords: [15.107399646051427, 120.62429524788732], name: "Pepito Espiritu" },
+	{ id: 15, coords: [15.107395761787762, 120.62430262396194], name: "Almario Aquino Sr" },
+	{ id: 16, coords: [15.107395761787762, 120.62430262396194], name: "Virginia Aquino" },
+	{ id: 17, coords: [15.107395761787762, 120.62430262396194], name: "Abelardo Aquino" },
+	{ id: 18, coords: [15.107391230146746, 120.62431603500676], name: "Estrella Dimatulac" },
+	{ id: 19, coords: [15.107391230146746, 120.62431603500676], name: "Honorio Reyes Jr" },
+	{ id: 20, coords: [15.10738799326023, 120.62431938776797], name: "Eladio Cabrera" },
+	{ id: 21, coords: [15.10738799326023, 120.62431938776797], name: "Lourdes Cabrera" },
+	{ id: 22, coords: [15.10738799326023, 120.62431938776797], name: "Romeo Cabrera" },
+	{ id: 23, coords: [15.107382166864399, 120.62432810494707], name: "Leopoldo Silva" },
+	{ id: 24, coords: [15.107382166864399, 120.62432810494707], name: "Marietta Silva" },
+	{ id: 25, coords: [15.107382166864399, 120.62432810494707], name: "Alejandro Silva" },
+
+	{ id: 26, coords: [15.107382166864399, 120.62432810494707], name: "Esperanza Silva" },
+    	{ id: 27, coords: [15.107382166864399, 120.62432810494707], name: "Phillip Hayter" },
+    	{ id: 28, coords: [15.10738022473242, 120.62433749267842], name: "Pedro Catacutan" },
+    	{ id: 29, coords: [15.10738022473242, 120.62433749267842], name: "Aquilina Catacutan" },
+    	{ id: 30, coords: [15.10738022473242, 120.62433749267842], name: "Romeo Catacutan" },
+    	{ id: 31, coords: [15.107373103581669, 120.62434419820086], name: "Arturo Dungca" },
+    	{ id: 32, coords: [15.107373103581669, 120.62434419820086], name: "Eric Dungca" },
+    	{ id: 33, coords: [15.10736662980805, 120.62435291537996], name: "Luisa Gatmaitan" },
+    	{ id: 34, coords: [15.10736662980805, 120.62435291537996], name: "Herminio Gatmaitan" },
+    	{ id: 35, coords: [15.10736662980805, 120.62435291537996], name: "Almario Gatmaitan" },
+    	{ id: 36, coords: [15.107359508656842, 120.62436297366355], name: "Danika Gatmaitan" },
+    	{ id: 37, coords: [15.107357566524659, 120.62436498532028], name: "Aminiano Gatmaitan" },
+    	{ id: 38, coords: [15.107357566524659, 120.62436498532028], name: "Eliza Gatmaitan" },
+    	{ id: 39, coords: [15.107348503240884, 120.6243716908427], name: "Atanacio Sabile" },
+    	{ id: 40, coords: [15.107348503240884, 120.6243716908427], name: "Antonia Tongol" },
+    	{ id: 41, coords: [15.107348503240884, 120.6243716908427], name: "Ernesto Sabile" },
+   	{ id: 42, coords: [15.107348503240884, 120.62438040802179], name: "Olimpio Bie" },
+    	{ id: 43, coords: [15.107348503240884, 120.62438040802179], name: "Dominga Bie" },
+    	{ id: 44, coords: [15.107348503240884, 120.62438040802179], name: "Edilberto Bie" },
+    	{ id: 45, coords: [15.107348503240884, 120.62438040802179], name: "Lolita Bodonia" },
+    	{ id: 46, coords: [15.107343971598839, 120.62439314851436], name: "Teresita Dimatulac" },
+    	{ id: 47, coords: [15.107343971598839, 120.62439314851436], name: "Francisco Dimatulac" },
+    	{ id: 48, coords: [15.107343971598839, 120.62439314851436], name: "Isindra Dimatulac" },
+    	{ id: 49, coords: [15.107343971598839, 120.62439314851436], name: "Guillerma Dimatulac" },
+    	{ id: 50, coords: [15.107337497824343, 120.6243985129323], name: "Victor Dimatulac" },
+
+    	{ id: 51, coords: [15.10734073471161, 120.6244072301114], name: "Jesus Pasion" },
+    	{ id: 52, coords: [15.107323902897239, 120.62442667612639], name: "Miguel Cordero" },
+    	{ id: 53, coords: [15.107323902897239, 120.62442667612639], name: "Alejandra Cordero" },
+    	{ id: 54, coords: [15.107323902897239, 120.62442667612639], name: "Teresita Torres" },
+    	{ id: 55, coords: [15.107323902897239, 120.62442667612639], name: "Manuelito Torres" },
+    	{ id: 56, coords: [15.107323902897239, 120.62442667612639], name: "Trixie Roquiro" },
+    	{ id: 57, coords: [15.107318723877155, 120.62443271109653], name: "Bartolomia Evaristo" },
+    	{ id: 58, coords: [15.107318723877155, 120.62443271109653], name: "Remigio Evaristo" },
+    	{ id: 59, coords: [15.107314839612027, 120.62444343993238], name: "Leonardo Santos" },
+    	{ id: 60, coords: [15.107314839612027, 120.62444343993238], name: "Juana Santos" },
+    	{ id: 61, coords: [15.107314839612027, 120.62444343993238], name: "Esperanza Guiao" },
+    	{ id: 62, coords: [15.107309660591726, 120.62445282766373], name: "Alexander Pingul" },
+    	{ id: 63, coords: [15.107307071081518, 120.6244622153951], name: "Flaviano Salvador" },
+    	{ id: 64, coords: [15.107307071081518, 120.6244622153951], name: "Lourdes Garong" },
+    	{ id: 65, coords: [15.107301244683473, 120.62447026202197], name: "Hilarion Bamba" },
+    	{ id: 66, coords: [15.107301244683473, 120.62447026202197], name: "Alejandro Bamba" },
+    	{ id: 67, coords: [15.107299302550755, 120.62447562643989], name: "Carmelita Sunga" },
+    	{ id: 68, coords: [15.107293476152481, 120.62448300251454], name: "Arsenio Gatchalian" },
+    	{ id: 69, coords: [15.107293476152481, 120.62448300251454], name: "Maria Gatchalian" },
+    	{ id: 70, coords: [15.107293476152481, 120.62448300251454], name: "Arturo Gatchalian" },
+    	{ id: 71, coords: [15.107293476152481, 120.62448300251454], name: "Alino Gatchalian" },
+    	{ id: 72, coords: [15.107293476152481, 120.62448300251454], name: "Roberto Gatchalian" },
+    	{ id: 73, coords: [15.107290239264476, 120.62448970803693], name: "Vivencio Degracia" },
+    	{ id: 74, coords: [15.107288297131658, 120.62449171969368], name: "Alfonso Nunag" },
+    	{ id: 75, coords: [15.107285060243578, 120.62449708411158], name: "Nestor Gatchalian" },
+
+    	{ id: 76, coords: [15.107281175977826, 120.62450446018624], name: "Ricardo Quiambao" },
+    	{ id: 77, coords: [15.107281175977826, 120.62450446018624], name: "Pastor Quiambao" },
+    	{ id: 78, coords: [15.107281175977826, 120.62450446018624], name: "Vicloria Quiambao" },
+    	{ id: 79, coords: [15.10727923384492, 120.62451585957432], name: "Jose De Jesus" },
+    	{ id: 80, coords: [15.10727923384492, 120.62451585957432], name: "Ciriaca De Jesus" },
+    	{ id: 81, coords: [15.10727923384492, 120.62451585957432], name: "Rodolfo De Jesus" },
+    	{ id: 82, coords: [15.107274054823742, 120.62451854178326], name: "Rolando Cordova" },
+    	{ id: 83, coords: [15.107274054823742, 120.62451854178326], name: "Princess Abraham Nuqui" },
+    	{ id: 84, coords: [15.107270817935456, 120.62452457675342], name: "Encarnacion Serrano" },
+    	{ id: 85, coords: [15.107270817935456, 120.62452457675342], name: "Edwin Manalastas" },
+    	{ id: 86, coords: [15.107265638914088, 120.6245326233803], name: "Catalina David" },
+    	{ id: 87, coords: [15.107265638914088, 120.6245326233803], name: "Clarita Mandap" },
+    	{ id: 88, coords: [15.107265638914088, 120.6245326233803], name: "Domingo David" },
+    	{ id: 89, coords: [15.107261107270286, 120.62453932890273], name: "Purification Aguilar" },
+    	{ id: 90, coords: [15.107261107270286, 120.62453932890273], name: "Ferdinan Aguilar" },
+    	{ id: 91, coords: [15.107261107270286, 120.62453932890273], name: "Nina Luise Catalan" },
+    	{ id: 92, coords: [15.107256575626382, 120.62454804608184], name: "Nenita Guillermo" },
+    	{ id: 93, coords: [15.107256575626382, 120.62454804608184], name: "Domingo Espiritu" },
+    	{ id: 94, coords: [15.107256575626382, 120.62454804608184], name: "Loreta Espiritu" },
+    	{ id: 95, coords: [15.107256575626382, 120.62454804608184], name: "Celestina Espiritu" },
+    	{ id: 96, coords: [15.107256575626382, 120.62454804608184], name: "Guadalupe Espiritu" },
+    	{ id: 97, coords: [15.107254633493246, 120.62455273994752], name: "Mariano Tapang" },
+    	{ id: 98, coords: [15.107254633493246, 120.62455273994752], name: "Maria Paz Tapang" },
+    	{ id: 99, coords: [15.107254633493246, 120.62455273994752], name: "Leonido Tapang" },
+    	{ id: 100, coords: [15.107254633493246, 120.62455273994752], name: "Felicisima Dayrit" },
+
+    	{ id: 101, coords: [15.107254633493246, 120.62455273994752], name: "Miguela Dayrit" },
+    	{ id: 102, coords: [15.107254633493246, 120.62455273994752], name: "Alvin Dayrit" },
+    	{ id: 103, coords: [15.107250749226937, 120.62455810436543], name: "Eugenio David" },
+    	{ id: 104, coords: [15.107250749226937, 120.62455810436543], name: "Reyna David" },
+    	{ id: 105, coords: [15.107250749226937, 120.62455810436543], name: "Michael Abogado" },
+    	{ id: 106, coords: [15.107250749226937, 120.62455810436543], name: "Coraline David" },
+    	{ id: 107, coords: [15.107248807093749, 120.62456480988781], name: "Ciriaco Flores" },
+    	{ id: 108, coords: [15.107248807093749, 120.62456480988781], name: "Dolores Flores" },
+    	{ id: 109, coords: [15.107248807093749, 120.62456480988781], name: "Adeth Flores" },
+    	{ id: 110, coords: [15.107244275449592, 120.62457352706696], name: "Pepito Dayrit" },
+    	{ id: 111, coords: [15.107244275449592, 120.62457352706696], name: "Lerma Dayrit" },
+    	{ id: 112, coords: [15.107237801672031, 120.62458358535056], name: "Jose Norberto Navarro" },
+    	{ id: 113, coords: [15.107237801672031, 120.62458358535056], name: "Ma.Milagros Navarro" },
+    	{ id: 114, coords: [15.107231327894304, 120.62459498473862], name: "Florentina Cervantes" },
+    	{ id: 115, coords: [15.107231327894304, 120.62459498473862], name: "Prescilla Cervantes" },
+    	{ id: 116, coords: [15.107231327894304, 120.62459498473862], name: "Benjamin Cervantes" },
+    	{ id: 117, coords: [15.107231327894304, 120.62459498473862], name: "Fortunata Tadoy" },
+    	{ id: 118, coords: [15.107224206738554, 120.62461040744016], name: "Leonardo Tapang" },
+    	{ id: 119, coords: [15.107224206738554, 120.62461040744016], name: "Alberto Tapang" },
+
+    ];
+
+    // Second checkpoint coordinates
+    const secondCheckpoint = [15.107441, 120.624218]; // New second checkpoint coordinates
+
+    // Second row gravesite coordinates (with id)
+    const secondRowGravesites = [
+        { id: 120, coords: [15.107410722398928, 120.62422098969145], name: "Arsenio David" },
+	{ id: 121, coords: [15.107410722398928, 120.62422098969145], name: "Mercedez David" },
+    	{ id: 122, coords: [15.107405543380969, 120.62422903631833], name: "Mariano Dayrit" },
+    	{ id: 123, coords: [15.107405543380969, 120.62422903631833], name: "Rosalia Dayrit" },
+    	{ id: 124, coords: [15.10740165911742, 120.62423775349744], name: "Ronald Dulay" },
+    	{ id: 125, coords: [15.107395832721954, 120.62424580012431], name: "Braulio De Jesus" },
+    	{ id: 126, coords: [15.107395832721954, 120.62424580012431], name: "Rafael De Jesus" },
+    	{ id: 127, coords: [15.107391948458229, 120.62425451730344], name: "Marina Garreon" },
+    	{ id: 128, coords: [15.107391948458229, 120.62425451730344], name: "Jose Garreon" },
+    	{ id: 129, coords: [15.107391948458229, 120.62425451730344], name: "Angeline Garreon" },
+    	{ id: 130, coords: [15.107386122062497, 120.62426390503481], name: "Mariano Dela Pena" },
+    	{ id: 131, coords: [15.107386122062497, 120.62426390503481], name: "Orlando Dela Pena" },
+    	{ id: 132, coords: [15.10738353255323, 120.62426792834823], name: "Martin Pingul" },
+    	{ id: 133, coords: [15.10738353255323, 120.62426792834823], name: "Celestino Pingul" },
+   	{ id: 134, coords: [15.107380943043939, 120.62427329276618], name: "Tomas Dayrit" },
+    	{ id: 135, coords: [15.107380943043939, 120.62427329276618], name: "Isabel Dayrit" },
+    	{ id: 136, coords: [15.107380943043939, 120.62427329276618], name: "Consolacion Dayrit" },
+    	{ id: 137, coords: [15.107380943043939, 120.62427329276618], name: "Florentina Dayrit" },
+    	{ id: 138, coords: [15.107375764025253, 120.62427865718409], name: "Nicanor Galang" },
+    	{ id: 139, coords: [15.107371879761157, 120.62428804491545], name: "Juana Mendoza" },
+    	{ id: 140, coords: [15.107371879761157, 120.62428804491545], name: "Mariano Mendoza" },
+    	{ id: 141, coords: [15.107371879761157, 120.62428804491545], name: "Leonila Mendoza" },
+    	{ id: 142, coords: [15.107331741793333, 120.62430786342006], name: "Arturo Cordero" },
+    	{ id: 143, coords: [15.107331741793333, 120.62430786342006], name: "Rodolfo Cordero" },
+    	{ id: 144, coords: [15.107328504905928, 120.62431523949469], name: "Eminiano Pangilinan" },
+    	{ id: 145, coords: [15.107328504905928, 120.62431523949469], name: "Florencia Isip" },
+    	{ id: 146, coords: [15.107323325885957, 120.62432261556933], name: "Manuel Manguerra" },
+    	{ id: 147, coords: [15.107323325885957, 120.62432261556933], name: "Genara Manguerra" },
+    	{ id: 148, coords: [15.107323325885957, 120.62432261556933], name: "Editha Manguerra" },
+    	{ id: 149, coords: [15.107319441620906, 120.62432999164398], name: "Consolacion Manliclic" },
+    	{ id: 150, coords: [15.107319441620906, 120.62432999164398], name: "Pedro Manliclic" },
+
+	{ id: 151, coords: [15.107319441620906, 120.62432999164398], name: "Jose Aquino" },
+	{ id: 152, coords: [15.107319441620906, 120.62432999164398], name: "Alexander Aquino" },
+	{ id: 153, coords: [15.107319441620906, 120.62432999164398], name: "Ian Mendoza" },
+	{ id: 154, coords: [15.107319441620906, 120.62432999164398], name: "Ricky Aquino" },
+	{ id: 155, coords: [15.107313615223191, 120.62434004992757], name: "Alfredo Lansangan" },
+	{ id: 156, coords: [15.107307141447741, 120.62434742600222], name: "Arsenio Lucina" },
+	{ id: 157, coords: [15.107305199315089, 120.62435346097239], name: "Lorencia Manalili" },
+	{ id: 158, coords: [15.107305199315089, 120.62435346097239], name: "Irene Dungo" },
+	{ id: 159, coords: [15.107305199315089, 120.62435346097239], name: "Raul David" },
+	{ id: 160, coords: [15.107300020294547, 120.62436486036046], name: "Leonila Vintug" },
+	{ id: 161, coords: [15.107300020294547, 120.62436486036046], name: "Abelardo Dimatulac" },
+	{ id: 162, coords: [15.107300020294547, 120.62436486036046], name: "Rosalina Lacanlale" },
+	{ id: 163, coords: [15.107300020294547, 120.62436486036046], name: "Pablo Dimatulac" },
+	{ id: 164, coords: [15.107300020294547, 120.62436486036046], name: "Luisa Dimatulac" },
+	{ id: 165, coords: [15.107300020294547, 120.62436486036046], name: "Crispula Dimatulac" },
+	{ id: 166, coords: [15.1072890148755, 120.6243822947187], name: "Aurelio Mendoza" },
+	{ id: 167, coords: [15.1072890148755, 120.6243822947187], name: "Patricia Mendoza" },
+	{ id: 168, coords: [15.1072890148755, 120.6243822947187], name: "Jose Mendoza" },
+	{ id: 169, coords: [15.1072890148755, 120.6243822947187], name: "Lucila Mendoza" },
+	{ id: 170, coords: [15.1072890148755, 120.6243822947187], name: "Yolanda Mendoza" },
+	{ id: 171, coords: [15.1072890148755, 120.6243822947187], name: "Madelpa Ocampo" },
+	{ id: 172, coords: [15.10728642536318, 120.62439101190049], name: "Querubin Isip" },
+	{ id: 173, coords: [15.10728642536318, 120.62439101190049], name: "Merlita De Jesus" },
+	{ id: 174, coords: [15.107280598964547, 120.6243963763184], name: "Belen Sabio" },
+	{ id: 175, coords: [15.107280598964547, 120.6243963763184], name: "Jose Sabio" },
+	{ id: 176, coords: [15.107280598964547, 120.6243963763184], name: "Carlo Joseph Pascual" },
+	{ id: 177, coords: [15.107277362076365, 120.62440442294526], name: "Patrocinia De Jesus" },
+	{ id: 178, coords: [15.107274772565777, 120.62440978736318], name: "Loreta Sanehez" },
+	{ id: 179, coords: [15.107269593544496, 120.62441515178112], name: "Jonathan Mendiola" },
+	{ id: 180, coords: [15.107269593544496, 120.62441515178112], name: "Ricardo Quiambao" },
+	{ id: 181, coords: [15.107269593544496, 120.62441515178112], name: "Jonalina Mendiola" },
+	{ id: 182, coords: [15.107266356656137, 120.62442051619904], name: "Estanislao Umali" },
+	{ id: 183, coords: [15.107266356656137, 120.62442051619904], name: "Diosdado Umali" },
+	{ id: 184, coords: [15.107266356656137, 120.62442051619904], name: "Patrocinio Umali" },
+	{ id: 185, coords: [15.107266356656137, 120.62442923337817], name: "Orlando Mendoza" },
+	{ id: 186, coords: [15.107256645990748, 120.62443862110953], name: "Generoso Tayag" },
+	{ id: 187, coords: [15.107256645990748, 120.62443862110953], name: "Engracia Tayag" },
+	{ id: 188, coords: [15.107254056479917, 120.62444532663193], name: "Ernesto Mercado" },
+	{ id: 189, coords: [15.107254056479917, 120.62444532663193], name: "Felicidad Mercado" },
+	{ id: 190, coords: [15.107254056479917, 120.62444532663193], name: "Monchito Mercado" },
+	{ id: 191, coords: [15.107252761724476, 120.6244500204976], name: "Mariano Lineda" },
+	{ id: 192, coords: [15.107252761724476, 120.6244500204976], name: "Rolando Gapati" },
+	{ id: 193, coords: [15.10724952483586, 120.62445471436328], name: "Magno Sandoval" },
+	{ id: 194, coords: [15.10724952483586, 120.62445471436328], name: "Adelina Sandoval" },
+	{ id: 195, coords: [15.10724952483586, 120.62445471436328], name: "Silvino Sandoval" },
+	{ id: 196, coords: [15.10724952483586, 120.62445471436328], name: "Marhonnamer Mallari" },
+	{ id: 197, coords: [15.107246287947193, 120.62446141988569], name: "Florentino Salunga" },
+	{ id: 198, coords: [15.10724240368072, 120.62446477264687], name: "Francisca Dizon" },
+	{ id: 199, coords: [15.10724240368072, 120.62446477264687], name: "Santiago Mendoza" },
+	{ id: 200, coords: [15.10724240368072, 120.62446477264687], name: "Lusia Mendoza" },
+
+	{ id: 201, coords: [15.10724240368072, 120.62446477264687], name: "Florencio Dizon" },
+	{ id: 202, coords: [15.10724240368072, 120.62446477264687], name: "Celestina Dizon" },
+	{ id: 203, coords: [15.10724240368072, 120.62446477264687], name: "Igmidio Dizon" },
+	{ id: 204, coords: [15.107237224658663, 120.62447281927376], name: "Alejandro Aquino" },
+	{ id: 205, coords: [15.107237224658663, 120.62447281927376], name: "Alma Ramos" },
+	{ id: 206, coords: [15.107237224658663, 120.62447281927376], name: "Avelina Aquino" },
+	{ id: 207, coords: [15.107235929903121, 120.62448086590065], name: "Angelo Salunga" },
+	{ id: 208, coords: [15.107235929903121, 120.62448086590065], name: "Florencia Lopez" },
+	{ id: 209, coords: [15.107235929903121, 120.62448086590065], name: "Rosalina Lopez" },
+	{ id: 210, coords: [15.107228808747534, 120.6244882419753], name: "Gaudencia Cordero" },
+	{ id: 211, coords: [15.107228808747534, 120.6244882419753], name: "Juan Cordero" },
+	{ id: 212, coords: [15.107228808747534, 120.6244882419753], name: "Teresita Cordero" },
+	{ id: 213, coords: [15.107228808747534, 120.6244882419753], name: "Jesus Cordero" },
+	{ id: 214, coords: [15.107228808747534, 120.6244882419753], name: "Rolly Yanga" },
+	{ id: 215, coords: [15.107228161369736, 120.62449360639322], name: "Milagros Cunanan" },
+	{ id: 216, coords: [15.10722557185855, 120.62449628860217], name: "Wilson Ducut" },
+	{ id: 217, coords: [15.10722557185855, 120.62449628860217], name: "Ricardo Capiti" },
+	{ id: 218, coords: [15.10722557185855, 120.62449628860217], name: "Nicolasa Capiti" },
+	{ id: 219, coords: [15.10722557185855, 120.62449628860217], name: "Remedios Capiti" },
+	{ id: 220, coords: [15.10722557185855, 120.62449628860217], name: "Reynaldo Capiti" },
+	{ id: 221, coords: [15.107223629725134, 120.62450098246785], name: "Ester Tapnio" },
+	{ id: 222, coords: [15.107223629725134, 120.62450098246785], name: "Mark Paulo Tapnio" },
+	{ id: 223, coords: [15.107223629725134, 120.62450098246785], name: "Fernando Tapnio" },
+	{ id: 224, coords: [15.107221687591693, 120.62450500578127], name: "Remedios Evaristo" },
+	{ id: 225, coords: [15.107221687591693, 120.62450500578127], name: "Fausto Reyes" },
+	{ id: 226, coords: [15.107218450702605, 120.62451104075146], name: "Jose Dayrit" },
+	{ id: 227, coords: [15.107218450702605, 120.62451104075146], name: "Hermana Dayrit" },
+	{ id: 228, coords: [15.107218450702605, 120.62451104075146], name: "Daisy Baustista" },
+	{ id: 229, coords: [15.107214566435635, 120.62451573461713], name: "Amando David" },
+	{ id: 230, coords: [15.107214566435635, 120.62451573461713], name: "Jayson Angeles" },
+	{ id: 231, coords: [15.107211976924281, 120.6245184168261], name: "Miguel David" },
+	{ id: 232, coords: [15.107211976924281, 120.6245184168261], name: "Petra David" },
+	{ id: 233, coords: [15.107211976924281, 120.6245184168261], name: "Eduardo David" },
+	{ id: 234, coords: [15.107211976924281, 120.6245184168261], name: "Ofelia David" },
+	{ id: 235, coords: [15.10721003479074, 120.62452378124402], name: "Francisca David" },
+	{ id: 236, coords: [15.10721003479074, 120.62452378124402], name: "Reynaldo David" },
+	{ id: 237, coords: [15.10721003479074, 120.62452378124402], name: "Apolonio Lorenzo" },
+	{ id: 238, coords: [15.107208740035032, 120.62452780455746], name: "Nenita Andrade" },
+	{ id: 239, coords: [15.107208740035032, 120.62452780455746], name: "Marina May Alba" },
+	{ id: 240, coords: [15.107206150523602, 120.62453182787092], name: "Estanislao Dimatulac" },
+	{ id: 241, coords: [15.107206150523602, 120.62453182787092], name: "Catalina Dimatulac" },
+	{ id: 242, coords: [15.107206150523602, 120.62453182787092], name: "Edgardo Mendoza" },
+	{ id: 243, coords: [15.107204208390009, 120.62453383952763], name: "Cataling Patawaran" },
+	{ id: 244, coords: [15.107204208390009, 120.62453383952763], name: "Juana Patawaran" },
+	{ id: 245, coords: [15.107204208390009, 120.62453518063208], name: "Alberto Gomez" },
+	{ id: 246, coords: [15.107201618878541, 120.62453786284105], name: "Rosita Manabat" },
+	{ id: 247, coords: [15.107201618878541, 120.62453786284105], name: "Abel Manabat" },
+	{ id: 248, coords: [15.107200971500655, 120.62454054505002], name: "Pedro Sangil" },
+	{ id: 249, coords: [15.107198381989138, 120.62454188615452], name: "Reymundo Dungca" },
+	{ id: 250, coords: [15.107198381989138, 120.62454188615452], name: "Jose Dungca" },
+
+    	{ id: 251, coords: [15.107198381989138, 120.62454188615452], name: "Ernesto Dungca" },
+    	{ id: 252, coords: [15.107198381989138, 120.62454188615452], name: "Nida Mercado" },
+    	{ id: 253, coords: [15.10719643985548, 120.62454590946794], name: "Rosalio Yalung" },
+    	{ id: 254, coords: [15.10719643985548, 120.62454590946794], name: "Anastacia Yulang" },
+    	{ id: 255, coords: [15.107194497721796, 120.62455060333362], name: "Pablo Panchez" },
+    	{ id: 256, coords: [15.107191260832291, 120.62455730885601], name: "Orlando Buan" },
+    	{ id: 257, coords: [15.107191260832291, 120.62455730885601], name: "Froilana Buan" },
+    	{ id: 258, coords: [15.107191260832291, 120.62455730885601], name: "Arnel Salunga" },
+    	{ id: 259, coords: [15.107186729186887, 120.62456267327394], name: "Garry Sarmiento" },
+    	{ id: 260, coords: [15.107186729186887, 120.62456267327394], name: "Nudy Gregorio" },
+    	{ id: 261, coords: [15.107186729186887, 120.62456267327394], name: "Bernardino Guiano" },
+    	{ id: 262, coords: [15.107186729186887, 120.62456267327394], name: "Eugenia Tolosa" },
+    	{ id: 263, coords: [15.107186729186887, 120.62456267327394], name: "Misericordia Guiano" },
+    	{ id: 264, coords: [15.10718284491933, 120.62456602603515], name: "Bernabe Lorenzo" },
+    	{ id: 265, coords: [15.10718284491933, 120.62456602603515], name: "Florencio Lorenzo" },
+    	{ id: 266, coords: [15.10718284491933, 120.62456602603515], name: "Lucia Lorenzo" },
+    	{ id: 267, coords: [15.10718284491933, 120.62456602603515], name: "Arvie Lorenzo" },
+    	{ id: 268, coords: [15.10718284491933, 120.62456602603515], name: "Ramon Lorenzo" },
+    	{ id: 269, coords: [15.107180902785531, 120.62457407266203], name: "Gaudencio Miranda" },
+    	{ id: 270, coords: [15.10717766589581, 120.62458144873668], name: "Florencio Espiritu" },
+    	{ id: 271, coords: [15.10717766589581, 120.62458144873668], name: "Jeofila Espiritu" },
+    	{ id: 272, coords: [15.10717766589581, 120.62458144873668], name: "Edilberto Espiritu" },
+    	{ id: 273, coords: [15.10717766589581, 120.62458144873668], name: "Elmer Espiritu" },
+    	{ id: 274, coords: [15.1071737816281, 120.62458882481131], name: "Catalina Concepcoion" },
+    	{ id: 275, coords: [15.1071737816281, 120.62458882481131], name: "Renato Concepcoion" },
+    	{ id: 276, coords: [15.1071737816281, 120.62458882481131], name: "Roberto Concepcoion" },
+    	{ id: 277, coords: [15.10717313425014, 120.6245921775725], name: "Lolita Malang" },
+    	{ id: 278, coords: [15.10716860260435, 120.62459485978147], name: "Teodulo Banal" },
+    	{ id: 279, coords: [15.10716860260435, 120.62459485978147], name: "Mercedes Banal" },
+    	{ id: 280, coords: [15.10716860260435, 120.62459485978147], name: "Epefania Flores" },
+    	{ id: 281, coords: [15.10716860260435, 120.62459485978147], name: "Ricardo Flores" },
+    	{ id: 282, coords: [15.10716860260435, 120.62459485978147], name: "Boy Flores" },
+    	{ id: 283, coords: [15.107165365714453, 120.62460290640834], name: "Ernesto David" },
+    	{ id: 284, coords: [15.107165365714453, 120.62460290640834], name: "Ricardo David" },
+    	{ id: 285, coords: [15.107165365714453, 120.62460290640834], name: "Florentina David" },
+    	{ id: 286, coords: [15.107160834068512, 120.62461028248299], name: "Ronaldo Miclat" },
+    	{ id: 287, coords: [15.107160834068512, 120.62461028248299], name: "Madelyn Miclat" },
+    	{ id: 288, coords: [15.1071582445565, 120.62461832910988], name: "Landislao Cuevas" },
+    	{ id: 289, coords: [15.1071582445565, 120.62461832910988], name: "Felicisimo Manarang" },
+    	{ id: 290, coords: [15.107155007666433, 120.62462637573677], name: "Modesto De Jesus" },
+    	{ id: 291, coords: [15.107155007666433, 120.62462637573677], name: "Silveria De Jesus" },
+    	{ id: 292, coords: [15.107155007666433, 120.62462637573677], name: "Agelo De Jesus" },
+    	{ id: 293, coords: [15.107155007666433, 120.62462637573677], name: "Basilia De Jesus" },
+    	{ id: 294, coords: [15.107155007666433, 120.62462637573677], name: "Alfredo De Jesus" }
+    ];
+
+    // Define walking path (split into two sections)
+    const firstPathCoords = [
+        gateCoord,
+        firstCheckpoint,
+        ...gravesites.map(grave => grave.coords)
+    ];
+
+    const secondPathCoords = [
+        gateCoord,  // Connect gate to second checkpoint
+        secondCheckpoint,
+        ...secondRowGravesites.map(grave => grave.coords)
+    ];
+
+    // Create polyline for the walking paths
+    const firstWalkingPath = L.polyline(firstPathCoords, { color: 'green' }).addTo(map);
+    const secondWalkingPath = L.polyline(secondPathCoords, { color: 'blue' }).addTo(map);
+
+// Add gravestone markers for the first row gravesites (with id)
+const gravesiteMarkers = [];
+
+// Group markers for the first row by coordinates
+const groupedMarkers = {};
+gravesites.forEach(grave => {
+    const key = grave.coords.join(',');
+    if (!groupedMarkers[key]) {
+        groupedMarkers[key] = [];
+    }
+    groupedMarkers[key].push(grave);
+});
+
+// Add markers for the first row to the map
+Object.entries(groupedMarkers).forEach(([coords, graves]) => {
+    const [lat, lng] = coords.split(',').map(Number);
+
+    // Create a single marker for the group
+    const marker = L.marker([lat, lng], { icon: gravestoneIcon }).addTo(map);
+
+    // Bind popup with all names or one name depending on context
+    marker.bindPopup(`
+        <b>Graves at this location:</b><br>
+        <ul>
+            ${graves.map(grave => `<li>${grave.name} (ID: ${grave.id})</li>`).join('')}
+        </ul>
+    `);
+
+    gravesiteMarkers.push(marker);
+});
+
+// Group and add gravestone markers for the second row gravesites (with id)
+const groupedSecondRowMarkers = {};
+secondRowGravesites.forEach(grave => {
+    const key = grave.coords.join(',');
+    if (!groupedSecondRowMarkers[key]) {
+        groupedSecondRowMarkers[key] = [];
+    }
+    groupedSecondRowMarkers[key].push(grave);
+});
+
+// Add markers for the second row to the map
+Object.entries(groupedSecondRowMarkers).forEach(([coords, graves]) => {
+    const [lat, lng] = coords.split(',').map(Number);
+
+    // Create a single marker for the group
+    const marker = L.marker([lat, lng], { icon: gravestoneIcon }).addTo(map);
+
+    // Bind popup with all names or one name depending on context
+    marker.bindPopup(`
+        <b>Graves at this location:</b><br>
+        <ul>
+            ${graves.map(grave => `<li>${grave.name} (ID: ${grave.id})</li>`).join('')}
+        </ul>
+    `);
+
+    gravesiteMarkers.push(marker);
+});
+
+// Ensure only gravestone markers are behind the user marker
+map.on('layeradd', function (e) {
+    // Check if the added layer is a marker with the gravestone icon specifically
+    if (
+        e.layer.options.icon &&
+        e.layer.options.icon.options.iconUrl === 'gravestone.png' // Match gravestone icon
+    ) {
+        // Set a lower z-index for gravestone markers
+        e.layer.setZIndexOffset(-100); // Pushes it behind other markers
+    } else if (
+        e.layer.options.icon &&
+        (e.layer.options.icon.options.iconUrl === 'gate-icon.png' || 
+         e.layer.options.icon.options.iconUrl === 'chapel-icon.png')
+    ) {
+        // Keep chapel and gate markers at a default z-index
+        e.layer.setZIndexOffset(0);
+    }
+});
+
+
+    // Function to extract a URL parameter by name
+    function getUrlParameter(name) {
+        var url = window.location.href;
+        var regex = new RegExp('[?&]' + name + '=([^&]*)');
+        var results = regex.exec(url);
+        return results ? decodeURIComponent(results[1]) : null;
+    }
+
+    // Add user marker (always visible)
+    var userMarker = L.marker([15.107161, 120.624238], { icon: blinkingIcon }).addTo(map); // Example location
+
+    // Extract gravesite ID from the URL and center map on it
+    var gravesiteId = getUrlParameter('id');
+
+    if (gravesiteId) {
+        var gravesite = gravesites.find(function(site) {
+            return site.id == gravesiteId;
+        });
+
+        // Check in the second row gravesites if not found in the first row
+        if (!gravesite) {
+            gravesite = secondRowGravesites.find(function(site) {
+                return site.id == gravesiteId;
+            });
+        }
+
+        if (gravesite) {
+            // Add marker for the gravesite
+            var marker = L.marker(gravesite.coords, { icon: gravestoneIcon }).addTo(map);
+            marker.bindPopup(gravesite.name).openPopup();
+
+            // Center the map on the selected gravesite
+            map.setView(gravesite.coords, 19);  // Zoom level 19 is close-up for gravesite
+
+            // Optionally, guide to the gravesite (can be implemented later)
+            // guideToGravesite(gravesite.coords); // Uncomment if guiding functionality is needed
+
+            // Hide all paths and gravesites initially
+            firstWalkingPath.setStyle({ opacity: 0 });
+            secondWalkingPath.setStyle({ opacity: 0 });
+            gravesiteMarkers.forEach(function(marker) {
+                marker.setOpacity(0);
+            });
+
+
+            // Show the correct path and gravesites based on selected id
+            if (gravesite.id >= 1 && gravesite.id <= 119) {
+                firstWalkingPath.setStyle({ opacity: 1 });
+                gravesiteMarkers.forEach(function(marker) {
+                    if (marker.getLatLng().equals(gravesite.coords)) {
+                        marker.setOpacity(1); // Only show the selected gravesite
+                    }
+                });
+            } else if (gravesite.id >= 120 && gravesite.id <= 294) {
+                secondWalkingPath.setStyle({ opacity: 1 });
+                gravesiteMarkers.forEach(function(marker) {
+                    if (marker.getLatLng().equals(gravesite.coords)) {
+                        marker.setOpacity(1); // Only show the selected gravesite
+                    }
+                });
+            }
+        }
+    }
+
+// Gate coordinates (fixing user marker to this location initially)
+const gateCoordinates = [15.107538, 120.624280]; // Adjust as necessary
+
+// User marker is initially at the gate
+userMarker.setLatLng(gateCoordinates);
+
+// Proximity threshold in meters (set around 30 meters as an example)
+const proximityThreshold = 30;
+
+// Function to calculate the distance between two lat-long points
+function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+    const R = 6371e3; // Radius of the Earth in meters
+    const φ1 = (lat1 * Math.PI) / 180;
+    const φ2 = (lat2 * Math.PI) / 180;
+    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+    const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+    const a =
+        Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+        Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    const distance = R * c; // Distance in meters
+    return distance;
+}
+
+let lastCenterTime = 0; // Timestamp of the last centering
+const centerCooldown = 10000; // 5 seconds cooldown for centering
+
+function onLocationFound(e) {
+    const userLatLng = e.latlng;
+    userMarker.setLatLng(userLatLng);
+
+    const currentTime = Date.now();
+    if (isAutoCentering && currentTime - lastCenterTime > centerCooldown) {
+        map.setView(userLatLng, 19); // Center map on user's location
+        lastCenterTime = currentTime;
+    }
+
+    // Enable dragging
+    map.dragging.enable();
+}
+
+
+
+
+// Remove the reference to `onLocationFoundWithPopup`, if present
+map.on('locationfound', onLocationFound);
+
+// Enable continuous location tracking
+map.locate({ watch: true, setView: false, maxZoom: 19 });
+
+
+// Step 1: Create a custom pane for the gate marker
+map.createPane('gatePane');
+map.getPane('gatePane').style.zIndex = 399; // Lower zIndex ensures it appears behind the user marker
+
+// Step 2: Define the gate icon
+var gateIcon = L.icon({
+    iconUrl: 'gate-icon.png', // Ensure this file exists in the correct location
+    iconSize: [32, 32],       // Icon size
+    iconAnchor: [16, 32],     // Anchor at the bottom center
+    popupAnchor: [0, -30]     // Popup appears above the icon
+});
+
+// Step 3: Add the gate marker and assign it to the custom pane
+var gateMarker = L.marker(gateCoord, { 
+    icon: gateIcon,
+    pane: 'gatePane' // Assign to the custom pane
+}).addTo(map);
+
+// Step 4: Bind popup to the gate marker
+gateMarker.bindPopup('<b>Cemetery Gate</b>').openPopup();
+
+
+// Chapel coordinates
+const chapelCoord = [15.107203626693096, 120.62405454580895];
+
+// Step 1: Define the chapel icon
+var chapelIcon = L.icon({
+    iconUrl: 'chapel-icon.png', // Replace with the path to your chapel icon
+    iconSize: [32, 32],         // Icon size
+    iconAnchor: [16, 32],       // Anchor at the bottom center
+    popupAnchor: [0, -30]       // Popup appears above the icon
+});
+
+// Step 2: Add the chapel marker
+var chapelMarker = L.marker(chapelCoord, { 
+    icon: chapelIcon
+}).addTo(map);
+
+// Step 3: Bind popup to the chapel marker
+chapelMarker.bindPopup('<b>Cemetery Chapel</b>').openPopup();
+
+
+// Function to handle device orientation and update marker rotation
+function updateUserMarkerDirection(event) {
+    if (event.alpha !== null) {
+        const bearing = event.alpha; // Alpha is the compass direction in degrees
+        const arrow = document.querySelector('.arrow');
+
+        if (arrow) {
+            // Update the rotation of the arrow based on the device's orientation
+            arrow.style.transform = `translate(-50%, -50%) rotate(${bearing}deg)`;
+        }
+    }
+}
+
+// Add an event listener for device orientation
+if (window.DeviceOrientationEvent) {
+    window.addEventListener('deviceorientation', updateUserMarkerDirection);
+} else {
+    console.warn("Device orientation is not supported on this device.");
+}
+document.addEventListener("DOMContentLoaded", function () {
+    const popup = document.getElementById("mapGuidePopup");
+    const closeButton = document.getElementById("closePopup");
+    const gotItButton = document.getElementById("gotItButton");
+
+    // Show popup on load
+    popup.style.display = "block";
+
+    // Close popup when clicking the close button
+    closeButton.addEventListener("click", () => {
+        popup.style.display = "none";
+    });
+
+    // Close popup when clicking "Got it" button
+    gotItButton.addEventListener("click", () => {
+        popup.style.display = "none";
+    });
+
+    // Close popup if user clicks outside the content area
+    window.addEventListener("click", (event) => {
+        if (event.target === popup) {
+            popup.style.display = "none";
+        }
+    });
+});
+
+map.locate({ watch: true, enableHighAccuracy: true, maximumAge: 10000 });
+
+
+// Iterate through each gravesite marker to attach click event listeners
+gravesiteMarkers.forEach((marker, index) => {
+    marker.on('click', function () {
+        // Close all currently open popups
+        map.closePopup();
+
+        // Open the popup for the clicked marker
+        marker.openPopup();
+    });
+});
+// Disable interaction for hidden markers
+gravesiteMarkers.forEach(function (marker) {
+    marker.on('popupopen', function (e) {
+        if (marker.options.opacity === 0) {
+            // Close the popup immediately if the marker is hidden
+            marker.closePopup();
+        }
+    });
+});
+
+// Reference the proximity popup element
+const proximityPopup = document.getElementById('proximityPopup');
+const popupMessage = proximityPopup.querySelector('span');
+
+// Function to calculate the distance between two lat-long points
+function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+    const R = 6371e3; // Radius of the Earth in meters
+    const φ1 = (lat1 * Math.PI) / 180;
+    const φ2 = (lat2 * Math.PI) / 180;
+    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+    const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+    const a =
+        Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+        Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in meters
+}
+
+// Function to show or hide the popup based on proximity
+function updateProximityPopup(userCoords) {
+    const distance = getDistanceFromLatLonInMeters(
+        userCoords.lat,
+        userCoords.lng,
+        gateCoordinates[0],
+        gateCoordinates[1]
+    );
+
+    if (distance <= proximityThreshold) {
+        popupMessage.textContent = "You are near the gate.";
+        proximityPopup.style.display = "block"; // Show the popup
+    } else {
+        popupMessage.textContent = `You are ${Math.round(distance)} meters away from the gate.`;
+        proximityPopup.style.display = "block"; // Hide the popup
+    }
+}
+
+// Example: Mock user's movement to test the popup
+function simulateUserMovement() {
+    let userCoords = { lat: gateCoordinates[0], lng: gateCoordinates[1] }; // Start at the gate
+    let step = 0.00002; // Small step for simulation
+
+    // Simulate user movement away and back
+    setInterval(() => {
+        userCoords.lat += step;
+        userMarker.setLatLng(userCoords); // Update user marker
+        updateProximityPopup(userCoords); // Update proximity popup
+
+        // Reverse movement after a while
+        if (Math.abs(userCoords.lat - gateCoordinates[0]) > 0.001) {
+            step = -step; // Reverse direction
+        }
+    }, 1000);
+}
+
+// Call the simulation function
+simulateUserMovement();
+
+
+
+
+function updateWeatherWidget(weatherData) {
+    const iconUrl = weatherData.icon; // URL for the weather icon
+    const condition = weatherData.condition; // Weather condition (e.g., "Sunny")
+    const temp = weatherData.temperature; // Temperature (e.g., "30°C")
+    const windSpeed = weatherData.windSpeed; // Wind speed (e.g., "5 km/h")
+
+    document.getElementById('weatherIcon').src = iconUrl;
+    document.getElementById('weatherCondition').textContent = condition;
+    document.getElementById('weatherDetails').textContent = `Temp: ${temp}, Wind: ${windSpeed}`;
+}
+
+// Example weather data (replace with real API data)
+const exampleWeatherData = {
+    icon: 'https://openweathermap.org/img/wn/01d.png', // Example sunny icon
+    condition: 'Sunny',
+    temperature: '30°C',
+    windSpeed: '5 km/h'
+};
+
+// Update the widget with example data
+updateWeatherWidget(exampleWeatherData);
+
+
+</script>
+
+</body>
+</html>
