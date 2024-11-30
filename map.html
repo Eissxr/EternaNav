@@ -176,10 +176,57 @@ button:hover {
     }
 }
 
+/* Weather widget container */
+#weatherWidget {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.9); /* Slightly transparent background */
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px 15px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    color: #333;
+}
+
+/* Weather icon */
+#weatherIcon {
+    width: 30px;
+    height: 30px;
+    margin-right: 10px;
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 600px) {
+    #weatherWidget {
+        font-size: 12px;
+        padding: 8px 10px;
+    }
+
+    #weatherIcon {
+        width: 24px;
+        height: 24px;
+        margin-right: 8px;
+    }
+}
+
 
     </style>
 </head>
 <body>
+<div id="weatherWidget">
+    <img id="weatherIcon" src="" alt="Weather Icon">
+    <div>
+        <div id="weatherCondition">Sunny</div>
+        <div id="weatherDetails">Temp: 30°C, Wind: 5 km/h</div>
+    </div>
+</div>
 
 <div id="map"></div>
 
@@ -757,20 +804,23 @@ function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
     return distance;
 }
 
-let isCentered = false;
+let lastCenterTime = 0; // Timestamp of the last centering
+const centerCooldown = 10000; // 5 seconds cooldown for centering
 
 function onLocationFound(e) {
     const userLatLng = e.latlng;
     userMarker.setLatLng(userLatLng);
 
-    if (!isCentered) {
-        map.setView(userLatLng, 19);  // Center map on user's location
-        isCentered = true;
+    const currentTime = Date.now();
+    if (isAutoCentering && currentTime - lastCenterTime > centerCooldown) {
+        map.setView(userLatLng, 19); // Center map on user's location
+        lastCenterTime = currentTime;
     }
 
-    // Enable dragging if it's disabled
+    // Enable dragging
     map.dragging.enable();
 }
+
 
 
 
@@ -938,6 +988,29 @@ navigator.geolocation.watchPosition(
     },
     { enableHighAccuracy: true }
 );
+
+
+function updateWeatherWidget(weatherData) {
+    const iconUrl = weatherData.icon; // URL for the weather icon
+    const condition = weatherData.condition; // Weather condition (e.g., "Sunny")
+    const temp = weatherData.temperature; // Temperature (e.g., "30°C")
+    const windSpeed = weatherData.windSpeed; // Wind speed (e.g., "5 km/h")
+
+    document.getElementById('weatherIcon').src = iconUrl;
+    document.getElementById('weatherCondition').textContent = condition;
+    document.getElementById('weatherDetails').textContent = `Temp: ${temp}, Wind: ${windSpeed}`;
+}
+
+// Example weather data (replace with real API data)
+const exampleWeatherData = {
+    icon: 'https://openweathermap.org/img/wn/01d.png', // Example sunny icon
+    condition: 'Sunny',
+    temperature: '30°C',
+    windSpeed: '5 km/h'
+};
+
+// Update the widget with example data
+updateWeatherWidget(exampleWeatherData);
 
 </script>
 
