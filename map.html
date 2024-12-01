@@ -941,11 +941,9 @@ gravesiteMarkers.forEach(function (marker) {
     });
 });
 
-// Ensure the popup is always visible
-const proximityPopup = document.getElementById("proximityPopup");
-
-// Display the popup all the time
-proximityPopup.style.display = "block";
+// Reference the proximity popup element
+const proximityPopup = document.getElementById('proximityPopup');
+const popupMessage = proximityPopup.querySelector('span');
 
 // Function to calculate the distance between two lat-long points
 function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
@@ -962,32 +960,46 @@ function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
     return R * c; // Distance in meters
 }
 
-// Update the message in the popup based on proximity to the gate
-function updateProximityStatus(userLat, userLng) {
-    const distance = getDistanceFromLatLonInMeters(userLat, userLng, gateCoordinates[0], gateCoordinates[1]);
+// Function to show or hide the popup based on proximity
+function updateProximityPopup(userCoords) {
+    const distance = getDistanceFromLatLonInMeters(
+        userCoords.lat,
+        userCoords.lng,
+        gateCoordinates[0],
+        gateCoordinates[1]
+    );
 
     if (distance <= proximityThreshold) {
-        proximityPopup.innerHTML = `<span>You are near the gate of the cemetery!</span>`;
+        popupMessage.textContent = "You are near the gate.";
+        proximityPopup.style.display = "block"; // Show the popup
     } else {
-        proximityPopup.innerHTML = `<span>You are ${Math.round(distance)} meters away from the gate.</span>`;
+        popupMessage.textContent = `You are ${Math.round(distance)} meters away from the gate.`;
+        proximityPopup.style.display = "block"; // Hide the popup
     }
 }
 
-// Simulate user location updates
-navigator.geolocation.watchPosition(
-    (position) => {
-        const { latitude, longitude } = position.coords;
-        userMarker.setLatLng([latitude, longitude]);
-        map.setView([latitude, longitude]);
+// Example: Mock user's movement to test the popup
+function simulateUserMovement() {
+    let userCoords = { lat: gateCoordinates[0], lng: gateCoordinates[1] }; // Start at the gate
+    let step = 0.00002; // Small step for simulation
 
-        // Update proximity message
-        updateProximityStatus(latitude, longitude);
-    },
-    (error) => {
-        console.error("Error getting user location", error);
-    },
-    { enableHighAccuracy: true }
-);
+    // Simulate user movement away and back
+    setInterval(() => {
+        userCoords.lat += step;
+        userMarker.setLatLng(userCoords); // Update user marker
+        updateProximityPopup(userCoords); // Update proximity popup
+
+        // Reverse movement after a while
+        if (Math.abs(userCoords.lat - gateCoordinates[0]) > 0.001) {
+            step = -step; // Reverse direction
+        }
+    }, 1000);
+}
+
+// Call the simulation function
+simulateUserMovement();
+
+
 
 
 function updateWeatherWidget(weatherData) {
@@ -1012,6 +1024,7 @@ const exampleWeatherData = {
 
 // Update the widget with example data
 updateWeatherWidget(exampleWeatherData);
+
 
 </script>
 
